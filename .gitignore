@@ -24,6 +24,8 @@ build/
 # Credentials
 config.json.local
 auth_tokens.json
+.embed-token
+.token-cache.json
 
 # Logs
 *.log

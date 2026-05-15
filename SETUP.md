@@ -22,6 +22,37 @@ If you just want to **test the demo immediately**, use an AAD token:
 
 For a **persistent embed token** (needed for production or demos >1 hour):
 
+### Fast Path: Provision with Script (recommended)
+
+This repo now includes a provisioning script that creates:
+- Azure AD app registration
+- Service principal
+- Client secret
+- Power BI API app permissions (`Report.Read.All`, `Dataset.Read.All`)
+- Optional admin consent
+- `config.json` auth updates
+
+Run:
+
+```powershell
+# First-time only: install Azure CLI
+winget install -e --id Microsoft.AzureCLI
+
+# Then provision app registration + service principal and update config.json
+./scripts/provision_service_principal.ps1
+```
+
+Optional:
+
+```powershell
+# If you want to grant admin consent separately later
+./scripts/provision_service_principal.ps1 -SkipAdminConsent
+```
+
+Then continue at **Step 5** below to add the service principal to your Power BI workspace.
+
+---
+
 ### Step 1: Create Azure AD App Registration
 
 1. Go to **Azure Portal** → **App registrations** → **New registration**

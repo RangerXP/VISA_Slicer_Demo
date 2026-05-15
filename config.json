@@ -1,19 +1,20 @@
-{
-  "fabric": {
-    "workspaceName": "VISA",
-    "workspaceId": "8dd24078-9814-4e5d-a26c-3713092564bd",
-    "reportName": "Visa Slicer Demo",
-    "reportId": "366f4557-9e61-43ae-af8b-a5a5011be351",
-    "reportUrl": "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/reports/366f4557-9e61-43ae-af8b-a5a5011be351",
-    "tenantId": "b7e47691-9726-4f67-a302-e567815f3522"
-  },
-  "auth": {
-    "clientId": "TODO: set from Azure AD app registration",
-    "clientSecret": "TODO: load from Key Vault",
-    "scope": "https://analysis.windows.net/.default"
-  },
-  "embedding": {
-    "capacityId": "TODO: optional - if using Premium capacity",
-    "embedScenario": "service_principal"
-  }
+﻿{
+    "fabric":  {
+                   "workspaceName":  "VISA",
+                   "workspaceId":  "8dd24078-9814-4e5d-a26c-3713092564bd",
+                   "reportName":  "Visa Slicer Demo",
+                   "reportId":  "366f4557-9e61-43ae-af8b-a5a5011be351",
+                   "reportUrl":  "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/reports/366f4557-9e61-43ae-af8b-a5a5011be351",
+                   "tenantId":  "b7e47691-9726-4f67-a302-e567815f3522"
+               },
+    "auth":  {
+                 "clientId":  "60462dce-e375-46f2-b1de-911183435c2d",
+                 "clientSecret":  "LOAD_FROM_ENV_VAR_PBI_CLIENT_SECRET",
+                 "tenantId":  "b7e47691-9726-4f67-a302-e567815f3522",
+                 "scope":  "https://analysis.windows.net/.default"
+             },
+    "embedding":  {
+                      "capacityId":  "TODO: optional - if using Premium capacity",
+                      "embedScenario":  "service_principal"
+                  }
 }
