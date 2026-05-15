@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VISA Slicer Demo - Power BI Embedded with Cascading Filters</title>
+    <script src="https://cdn.jsdelivr.net/npm/powerbi-client@2.26.0/dist/powerbi.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #0078d4;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .description {
+            color: #333;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .config-section {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 3px solid #0078d4;
+        }
+
+        .config-section h2 {
+            font-size: 14px;
+            color: #0078d4;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #0078d4;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: #005a9e;
+        }
+
+        .btn-primary:active {
+            background: #004578;
+        }
+
+        .btn-secondary {
+            background: #e7e7e7;
+            color: #333;
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .filter-section.active {
+            display: block;
+        }
+
+        .filter-section h2 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .filter-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .filter-actions button {
+            flex: 1;
+            padding: 12px;
+        }
+
+        .report-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: none;
+        }
+
+        .report-container.active {
+            display: block;
+        }
+
+        #reportContainer {
+            width: 100%;
+            height: 800px;
+            position: relative;
+        }
+
+        .console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+
+        .console-line {
+            margin-bottom: 5px;
+        }
+
+        .console-line.info {
+            color: #4ec9b0;
+        }
+
+        .console-line.success {
+            color: #6a9955;
+        }
+
+        .console-line.warning {
+            color: #dcdcaa;
+        }
+
+        .console-line.error {
+            color: #f48771;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.idle {
+            background: #999;
+        }
+
+        .status-indicator.loading {
+            background: #dcdcaa;
+            animation: pulse 1s infinite;
+        }
+
+        .status-indicator.success {
+            background: #6a9955;
+        }
+
+        .status-indicator.error {
+            background: #f48771;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid #c33;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎯 VISA Slicer Demo - Power BI Embedded</h1>
+            <div class="description">
+                <strong>Demonstrates:</strong> Cascading filters (Segment → Product), deferred execution (filters apply only on "Apply"), 
+                and mobile-friendly interaction. Selections sit in JavaScript state; only one <code>updateFilters()</code> call fires to Power BI.
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <div class="header">
+            <div class="config-section">
+                <h2>1. Embed Configuration</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Embed URL</label>
+                        <input type="text" id="embedUrl" placeholder="https://app.powerbi.com/reportEmbed?reportId=...&groupId=..." value="https://app.powerbi.com/reportEmbed?reportId=366f4557-9e61-43ae-af8b-a5a5011be351&groupId=8dd24078-9814-4e5d-a26c-3713092564bd">
+                    </div>
+                    <div class="form-group">
+                        <label>Report ID</label>
+                        <input type="text" id="reportId" placeholder="e.g., 366f4557-9e61-43ae-af8b-a5a5011be351" value="366f4557-9e61-43ae-af8b-a5a5011be351">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Token Type</label>
+                        <select id="tokenType">
+                            <option value="aad">AAD Token (from F12)</option>
+                            <option value="embed">Embed Token (from API)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Access Token</label>
+                        <input type="password" id="accessToken" placeholder="Paste AAD or embed token here...">
+                    </div>
+                </div>
+                <div class="form-row full">
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="embedReport()">▶ Embed Report</button>
+                        <button class="btn-secondary" onclick="clearConsole()">Clear Console</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="error-message"></div>
+
+        <!-- Filter Section -->
+        <div id="filterSection" class="filter-section">
+            <h2><span class="status-indicator idle" id="statusIndicator"></span>Host-App Filter Panel</h2>
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="yearFilter">Year</label>
+                    <select id="yearFilter" onchange="onYearChange()">
+                        <option value="">-- Select Year --</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="segmentFilter">Segment</label>
+                    <select id="segmentFilter" onchange="onSegmentChange()">
+                        <option value="">-- Select Segment --</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="productFilter">Product (cascades from Segment)</label>
+                    <select id="productFilter">
+                        <option value="">-- Select Product --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn-primary" onclick="applyFilters()">✓ Apply Filters</button>
+                <button class="btn-secondary" onclick="clearFilters()">✕ Clear All</button>
+            </div>
+        </div>
+
+        <!-- Report Container -->
+        <div id="reportContainer" class="report-container">
+            <div id="embeddedReport"></div>
+        </div>
+
+        <!-- Console Log -->
+        <div class="console" id="console"></div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // CATALOG: Defines filter metadata and cascading relationships
+        // ============================================================================
+        const catalog = {
+            year: {
+                label: 'Year',
+                table: 'DateTable',
+                column: 'Year',
+                values: ['2013', '2014']
+            },
+            segment: {
+                label: 'Segment',
+                table: 'Segment',
+                column: 'Segment',
+                values: ['Channel Partners', 'Enterprise', 'Government', 'Midmarket', 'Small Business']
+            },
+            product: {
+                label: 'Product',
+                table: 'Product',
+                column: 'Product',
+                // Cascade mapping: Segment → Products available for that segment
+                valuesBySegment: {
+                    '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'], // Default: all
+                    'Channel Partners': ['Amarilla', 'Montana', 'Paseo'],
+                    'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                    'Government': ['Amarilla', 'Carretera', 'Montana'],
+                    'Midmarket': ['Montana', 'Paseo', 'Velo'],
+                    'Small Business': ['Amarilla', 'Paseo', 'VTT']
+                }
+            }
+        };
+
+        // ============================================================================
+        // STATE: Holds filter selections (deferred until Apply)
+        // ============================================================================
+        let filterState = {
+            year: '',
+            segment: '',
+            product: ''
+        };
+
+        let report = null;
+        let models = null;
+
+        // ============================================================================
+        // LOGGING: Console output for demo transparency
+        // ============================================================================
+        function log(message, type = 'info') {
+            const console_el = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            line.innerHTML = `<span class="timestamp">${timestamp}</span> ${escapeHtml(message)}`;
+            console_el.appendChild(line);
+            console_el.scrollTop = console_el.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+        }
+
+        // ============================================================================
+        // INITIALIZATION: Populate filter dropdowns on load
+        // ============================================================================
+        window.onload = function() {
+            populateYearDropdown();
+            populateSegmentDropdown();
+            populateProductDropdown();
+            log('Demo initialized. Ready to embed report.', 'success');
+        };
+
+        function populateYearDropdown() {
+            const select = document.getElementById('yearFilter');
+            select.innerHTML = '<option value="">-- Select Year --</option>';
+            catalog.year.values.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+        }
+
+        function populateSegmentDropdown() {
+            const select = document.getElementById('segmentFilter');
+            select.innerHTML = '<option value="">-- Select Segment --</option>';
+            catalog.segment.values.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+        }
+
+        function populateProductDropdown(segmentValue = '') {
+            const select = document.getElementById('productFilter');
+            const products = catalog.product.valuesBySegment[segmentValue] || catalog.product.valuesBySegment[''];
+            select.innerHTML = '<option value="">-- Select Product --</option>';
+            products.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+        }
+
+        // ============================================================================
+        // FILTER INTERACTIONS: Deferred execution (selections accumulate locally)
+        // ============================================================================
+        function onYearChange() {
+            const value = document.getElementById('yearFilter').value;
+            filterState.year = value;
+            log(`Year selected: "${value}" (deferred — not sent to PBI yet)`, 'info');
+        }
+
+        function onSegmentChange() {
+            const value = document.getElementById('segmentFilter').value;
+            filterState.segment = value;
+            log(`Segment selected: "${value}" (deferred)`, 'info');
+            
+            // CASCADE: Update product dropdown
+            populateProductDropdown(value);
+            filterState.product = ''; // Reset product when segment changes
+            log(`✓ Product dropdown cascade: showing products for Segment "${value}"`, 'success');
+        }
+
+        // ============================================================================
+        // APPLY & CLEAR: Send filter state to Power BI
+        // ============================================================================
+        function applyFilters() {
+            if (!models) {
+                showError('Report not embedded yet. Embed first.');
+                return;
+            }
+
+            const filters = [];
+
+            // Build filter array for updateFilters
+            if (filterState.year) {
+                filters.push({
+                    $schema: 'http://powerbi.com/product/schema#advanced',
+                    target: {
+                        table: catalog.year.table,
+                        column: catalog.year.column
+                    },
+                    operator: 'In',
+                    values: [filterState.year]
+                });
+            }
+
+            if (filterState.segment) {
+                filters.push({
+                    $schema: 'http://powerbi.com/product/schema#advanced',
+                    target: {
+                        table: catalog.segment.table,
+                        column: catalog.segment.column
+                    },
+                    operator: 'In',
+                    values: [filterState.segment]
+                });
+            }
+
+            if (filterState.product) {
+                filters.push({
+                    $schema: 'http://powerbi.com/product/schema#advanced',
+                    target: {
+                        table: catalog.product.table,
+                        column: catalog.product.column
+                    },
+                    operator: 'In',
+                    values: [filterState.product]
+                });
+            }
+
+            log(`Apply pressed — sending ${filters.length} filter(s) in one call`, 'warning');
+            
+            models.report.updateFilters(powerbi.models.FiltersOperations.Replace, filters)
+                .then(() => {
+                    log('✓ Filters applied successfully. All selections sent to PBI in one updateFilters() call.', 'success');
+                })
+                .catch(error => {
+                    log(`✗ Filter error: ${error.message}`, 'error');
+                });
+        }
+
+        function clearFilters() {
+            if (!models) {
+                showError('Report not embedded yet.');
+                return;
+            }
+
+            filterState = { year: '', segment: '', product: '' };
+            document.getElementById('yearFilter').value = '';
+            document.getElementById('segmentFilter').value = '';
+            document.getElementById('productFilter').value = '';
+            populateProductDropdown('');
+
+            models.report.updateFilters(powerbi.models.FiltersOperations.RemoveAll, [])
+                .then(() => {
+                    log('✓ Filters cleared. One updateFilters(RemoveAll, []) call sent to PBI.', 'success');
+                })
+                .catch(error => {
+                    log(`✗ Clear error: ${error.message}`, 'error');
+                });
+        }
+
+        // ============================================================================
+        // EMBEDDING: Load and configure report
+        // ============================================================================
+        function embedReport() {
+            const embedUrl = document.getElementById('embedUrl').value;
+            const reportId = document.getElementById('reportId').value;
+            const tokenType = document.getElementById('tokenType').value;
+            const accessToken = document.getElementById('accessToken').value;
+
+            // Validation
+            if (!embedUrl || !reportId || !accessToken) {
+                showError('Missing required fields: Embed URL, Report ID, and Access Token');
+                return;
+            }
+
+            clearError();
+            updateStatus('loading');
+            log('Embedding report...', 'info');
+
+            const config = {
+                type: 'report',
+                id: reportId,
+                embedUrl: embedUrl,
+                accessToken: accessToken,
+                tokenType: tokenType === 'aad' ? powerbi.models.TokenType.Aad : powerbi.models.TokenType.Embed,
+                settings: {
+                    filterPaneEnabled: false,
+                    navContentPaneEnabled: false
+                }
+            };
+
+            const reportContainer = document.getElementById('embeddedReport');
+            reportContainer.innerHTML = '';
+
+            try {
+                report = powerbi.embed(reportContainer, config);
+                
+                report.on('loaded', function() {
+                    log('Report loaded', 'success');
+                });
+
+                report.on('rendered', function() {
+                    log('Report rendered', 'success');
+                    log('✓ Filter panel injected above report', 'success');
+                    updateStatus('success');
+                    document.getElementById('filterSection').classList.add('active');
+                    document.getElementById('reportContainer').classList.add('active');
+                });
+
+                report.on('error', function(event) {
+                    log(`Report error: ${event.detail.message}`, 'error');
+                    updateStatus('error');
+                });
+
+                // Get models for filter operations
+                report.on('loaded', () => {
+                    report.getExplorer().then(explorer => {
+                        models = { report: report };
+                        log('✓ Report API ready for filter updates', 'success');
+                    }).catch(err => {
+                        log(`Warning: Could not initialize API: ${err}`, 'warning');
+                    });
+                });
+
+            } catch (error) {
+                showError(`Embed error: ${error.message}`);
+                updateStatus('error');
+                log(`✗ Embed failed: ${error.message}`, 'error');
+            }
+        }
+
+        // ============================================================================
+        // UI HELPERS
+        // ============================================================================
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+        }
+
+        function clearError() {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.classList.remove('show');
+        }
+
+        function updateStatus(status) {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.className = `status-indicator ${status}`;
+        }
+    </script>
+</body>
+</html>
