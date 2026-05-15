@@ -83,7 +83,7 @@ def load_config():
         print(f"Error: config.json not found at {CONFIG_PATH}")
         sys.exit(1)
 
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    with open(CONFIG_PATH, "r", encoding="utf-8-sig") as f:
         config = json.load(f)
 
     auth = config.setdefault("auth", {})
