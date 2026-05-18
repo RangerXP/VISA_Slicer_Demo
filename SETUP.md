@@ -18,6 +18,52 @@ If you just want to **test the demo immediately**, use an AAD token:
 
 ---
 
+## Preferred Local Run (service principal + in-app token refresh)
+
+If the app is supposed to own embed token refresh, run the local demo server instead of generating and pasting a one-off token manually.
+
+### Step 1: Install the Python dependency
+
+```powershell
+cd "c:\Users\seankelley\OneDrive - Microsoft\Documents\VISA\Slicer\Demo"
+python -m pip install requests
+```
+
+### Step 2: Put credentials in `.env.local`
+
+The repo already has the tenant, workspace, report, and client ID in `config.json`.
+Keep the real secret in `.env.local` so the app can start without retyping shell variables each session.
+
+```powershell
+Copy-Item .\.env.local.example .\.env.local
+```
+
+Then edit `.env.local` and replace `YOUR_SECRET_VALUE_HERE` with the real client secret value.
+
+`src\embed_token.py` and `src\demo_server.py` load `.env.local` automatically.
+
+### Step 3: Start the local app server
+
+```powershell
+python .\src\demo_server.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000/pbi-app-injection-demo.html
+```
+
+What this gives you:
+- The HTML page fetches its embed token from `/api/embed-token`
+- The server reuses cached tokens when valid and refreshes them when needed
+- The page renews the embedded report token before expiry by calling the same API again
+- You no longer need to paste tokens into the form for the normal embed-token flow
+
+If `/api/embed-token` returns an auth error, the client secret is wrong, expired, or belongs to a different app registration than the `clientId` in `config.json`.
+
+---
+
 ## Proper Setup (Service Principal + Embed Token - 15 min, production-ready)
 
 For a **persistent embed token** (needed for production or demos >1 hour):
@@ -30,7 +76,8 @@ This repo now includes a provisioning script that creates:
 - Client secret
 - Power BI API app permissions (`Report.Read.All`, `Dataset.Read.All`)
 - Optional admin consent
-- `config.json` auth updates
+- `.env.local` with local credentials
+- `config.json` auth metadata updates without persisting the secret
 
 Run:
 
@@ -38,7 +85,7 @@ Run:
 # First-time only: install Azure CLI
 winget install -e --id Microsoft.AzureCLI
 
-# Then provision app registration + service principal and update config.json
+# Then provision app registration + service principal and write .env.local
 ./scripts/provision_service_principal.ps1
 ```
 
@@ -78,17 +125,35 @@ Then continue at **Step 5** below to add the service principal to your Power BI 
 5. Click **Add permissions**
 6. Click **Grant admin consent for [Organization]** (needs admin)
 
-### Step 4: Update config.json
+### Step 4: Update local credentials
 
-In your `config.json`, replace the TODOs:
+Preferred local-dev path: create `.env.local` with your real credentials:
+
+```powershell
+Copy-Item .\.env.local.example .\.env.local
+```
+
+Then set:
+
+```text
+PBI_CLIENT_ID=YOUR-CLIENT-ID-FROM-STEP-1
+PBI_CLIENT_SECRET=YOUR-SECRET-VALUE-FROM-STEP-2
+PBI_TENANT_ID=YOUR-TENANT-ID
+PBI_SCOPE=00000009-0000-0000-c000-000000000000/.default
+```
+
+`config.json` should keep the secret placeholder so credentials do not get committed into the repo.
+
+Example `config.json` auth block:
 
 ```json
 {
   "fabric": { ... },
   "auth": {
     "clientId": "YOUR-CLIENT-ID-FROM-STEP-1",
-    "clientSecret": "YOUR-SECRET-VALUE-FROM-STEP-2",
-    "scope": "https://analysis.windows.net/.default"
+    "clientSecret": "LOAD_FROM_ENV_VAR_PBI_CLIENT_SECRET",
+    "tenantId": "YOUR-TENANT-ID",
+    "scope": "00000009-0000-0000-c000-000000000000/.default"
   },
   ...
 }
@@ -109,8 +174,10 @@ cd "path/to/Demo/src"
 python embed_token.py
 ```
 
+Note: `embed_token.py` is still useful for diagnostics, but the preferred way to run the actual demo is `python .\src\demo_server.py` so the application can request and refresh tokens itself.
+
 This will:
-- ✅ Load your credentials from config.json
+- ✅ Load your credentials from `.env.local` or environment variables
 - ✅ Authenticate with Azure AD
 - ✅ Generate a 60-minute embed token
 - ✅ Print it to console
@@ -131,10 +198,11 @@ This will:
 ## Troubleshooting
 
 **"Missing configuration" error:**
-- Update `config.json` with real Client ID and Secret from Azure AD
+- Verify `.env.local` exists and has the real Client ID, Secret, and Tenant ID
+- Or provide `PBI_CLIENT_ID`, `PBI_CLIENT_SECRET`, `PBI_TENANT_ID`, and `PBI_SCOPE` in the shell
 
 **"401 Unauthorized" from token generator:**
-- Verify Client ID and Secret are correct
+- Verify the Client ID and Secret in `.env.local` are correct
 - Check that API permissions were granted (Step 3)
 - Check that admin consent was granted
 

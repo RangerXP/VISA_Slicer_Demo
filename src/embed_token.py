@@ -23,6 +23,7 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = ROOT / "config.json"
+ENV_LOCAL_PATH = ROOT / ".env.local"
 EMBED_TOKEN_FILE = ROOT / ".embed-token"
 TOKEN_CACHE_FILE = ROOT / ".token-cache.json"
 
@@ -77,11 +78,42 @@ def _load_cache():
 def _save_cache(cache):
     TOKEN_CACHE_FILE.write_text(json.dumps(cache, indent=2), encoding="utf-8")
 
+
+def _strip_optional_quotes(value):
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        return value[1:-1]
+    return value
+
+
+def _load_env_file(env_path):
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        if line.startswith("export "):
+            line = line[len("export "):].strip()
+
+        if "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = _strip_optional_quotes(value.strip())
+
+        if key and key not in os.environ:
+            os.environ[key] = value
+
 def load_config():
     """Load configuration from config.json"""
     if not CONFIG_PATH.exists():
         print(f"Error: config.json not found at {CONFIG_PATH}")
         sys.exit(1)
+
+    _load_env_file(ENV_LOCAL_PATH)
 
     with open(CONFIG_PATH, "r", encoding="utf-8-sig") as f:
         config = json.load(f)
@@ -127,7 +159,7 @@ def load_config():
         print("Missing configuration:")
         for field in missing:
             print(f"   - {field}")
-        print("\nSet these in config.json or via env vars:")
+        print("\nSet these in config.json, .env.local, or env vars:")
         print("   PBI_CLIENT_ID, PBI_CLIENT_SECRET, PBI_TENANT_ID, PBI_SCOPE")
         sys.exit(1)
 

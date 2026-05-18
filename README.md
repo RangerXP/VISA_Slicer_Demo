@@ -3,6 +3,16 @@
 ## Overview
 Power BI embedding and analytics project for the VISA Slicer Demo report.
 
+## Documentation
+- [SETUP.md](SETUP.md) - environment, auth, and token setup
+- [TECHNICAL_README.md](TECHNICAL_README.md) - runtime filter architecture, function call flow, and sequence diagram
+
+## Local Credential Flow
+- Copy `.env.local.example` to `.env.local`
+- Put the real Power BI service principal secret in `.env.local`
+- `src/embed_token.py` and `src/demo_server.py` load `.env.local` automatically
+- Keep `config.json` on the placeholder secret value so credentials stay out of the repo
+
 ## Fabric Workspace Details
 - **Workspace Name:** VISA
 - **Workspace ID:** `8dd24078-9814-4e5d-a26c-3713092564bd`

@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VISA Slicer Demo - Power BI Embedded with Cascading Filters</title>
-    <script src="https://cdn.jsdelivr.net/npm/powerbi-client@2.26.0/dist/powerbi.min.js"></script>
+            <script src="vendor/powerbi.min.js"
+                onerror="this.onerror=null;this.src='https://unpkg.com/powerbi-client/dist/powerbi.min.js';"></script>
     <style>
         * {
             margin: 0;
@@ -208,6 +209,45 @@
             box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.1);
         }
 
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #333;
+            min-height: 28px;
+        }
+
+        .filter-option input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: #0078d4;
+            flex: 0 0 auto;
+        }
+
+        .filter-option span {
+            line-height: 1.3;
+        }
+
+        .filter-options.empty::after {
+            content: 'No options available';
+            color: #666;
+            font-size: 13px;
+        }
+
         .filter-actions {
             display: flex;
             gap: 10px;
@@ -236,6 +276,11 @@
             width: 100%;
             height: 800px;
             position: relative;
+        }
+
+        #embeddedReport {
+            width: 100%;
+            height: 800px;
         }
 
         .console {
@@ -319,6 +364,81 @@
             color: #666;
             font-size: 11px;
         }
+
+        .status-note {
+            padding: 12px;
+            border-radius: 6px;
+            background: #eef6ff;
+            border: 1px solid #c7def7;
+            color: #154c79;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .status-card {
+            background: #fff;
+            border: 1px solid #d9e5f2;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .status-card-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #5b6b7c;
+            margin-bottom: 6px;
+        }
+
+        .status-card-value {
+            font-size: 14px;
+            color: #203040;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .status-card-value.muted {
+            color: #5b6b7c;
+        }
+
+        .connection-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #eef1f4;
+            color: #425466;
+        }
+
+        .connection-pill.loading {
+            background: #fff4ce;
+            color: #7a5d00;
+        }
+
+        .connection-pill.success {
+            background: #dff6dd;
+            color: #0f5f2d;
+        }
+
+        .connection-pill.error {
+            background: #fde7e9;
+            color: #a4262c;
+        }
+
+        .console.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -335,36 +455,44 @@
         <!-- Configuration Section -->
         <div class="header">
             <div class="config-section">
-                <h2>1. Embed Configuration</h2>
+                <h2>1. Automated Embed Session</h2>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Embed URL</label>
-                        <input type="text" id="embedUrl" placeholder="https://app.powerbi.com/reportEmbed?reportId=...&groupId=..." value="https://app.powerbi.com/reportEmbed?reportId=366f4557-9e61-43ae-af8b-a5a5011be351&groupId=8dd24078-9814-4e5d-a26c-3713092564bd">
+                        <input type="text" id="embedUrl" placeholder="Loaded from /api/embed-token" value="https://app.powerbi.com/reportEmbed?reportId=366f4557-9e61-43ae-af8b-a5a5011be351&groupId=8dd24078-9814-4e5d-a26c-3713092564bd" readonly>
                     </div>
                     <div class="form-group">
                         <label>Report ID</label>
-                        <input type="text" id="reportId" placeholder="e.g., 366f4557-9e61-43ae-af8b-a5a5011be351" value="366f4557-9e61-43ae-af8b-a5a5011be351">
+                        <input type="text" id="reportId" placeholder="Loaded from /api/embed-token" value="366f4557-9e61-43ae-af8b-a5a5011be351" readonly>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Token Type</label>
-                        <select id="tokenType">
-                            <option value="aad">AAD Token (from F12)</option>
-                            <option value="embed">Embed Token (from API)</option>
-                        </select>
+                <div class="form-row full">
+                    <div class="status-note">
+                        The page requests its embed token from <code>/api/embed-token</code> during initialization and refreshes it automatically before expiry.
                     </div>
-                    <div class="form-group">
-                        <label>Access Token</label>
-                        <input type="password" id="accessToken" placeholder="Paste AAD or embed token here...">
+                </div>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-card-label">Connection</div>
+                        <div id="connectionStatusText" class="connection-pill idle">Idle</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-card-label">Embed Endpoint</div>
+                        <div class="status-card-value">http://127.0.0.1:8000/api/embed-token</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-card-label">Session</div>
+                        <div id="sessionStatusText" class="status-card-value muted">Waiting for token acquisition.</div>
                     </div>
                 </div>
                 <div class="form-row full">
                     <div class="button-group">
-                        <button class="btn-primary" onclick="embedReport()">▶ Embed Report</button>
-                        <button class="btn-secondary" onclick="clearConsole()">Clear Console</button>
+                        <button class="btn-primary" onclick="initializeManagedEmbed(true)">Retry Connection</button>
+                        <button class="btn-secondary" onclick="toggleConsoleVisibility()">Show Activity Log</button>
                     </div>
                 </div>
+                <input type="hidden" id="tokenType" value="embed">
+                <input type="hidden" id="accessToken" value="">
             </div>
         </div>
 
@@ -376,26 +504,24 @@
             <h2><span class="status-indicator idle" id="statusIndicator"></span>Host-App Filter Panel</h2>
             <div class="filter-grid">
                 <div class="filter-group">
-                    <label for="yearFilter">Year</label>
-                    <select id="yearFilter" onchange="onYearChange()">
-                        <option value="">-- Select Year --</option>
-                    </select>
+                    <label>Year</label>
+                    <div id="yearFilter" class="filter-options"></div>
                 </div>
                 <div class="filter-group">
-                    <label for="segmentFilter">Segment</label>
-                    <select id="segmentFilter" onchange="onSegmentChange()">
-                        <option value="">-- Select Segment --</option>
-                    </select>
+                    <label>Country</label>
+                    <div id="countryFilter" class="filter-options"></div>
                 </div>
                 <div class="filter-group">
-                    <label for="productFilter">Product (cascades from Segment)</label>
-                    <select id="productFilter">
-                        <option value="">-- Select Product --</option>
-                    </select>
+                    <label>Segment</label>
+                    <div id="segmentFilter" class="filter-options"></div>
+                </div>
+                <div class="filter-group">
+                    <label>Product (cascades from Segment)</label>
+                    <div id="productFilter" class="filter-options"></div>
                 </div>
             </div>
             <div class="filter-actions">
-                <button class="btn-primary" onclick="applyFilters()">✓ Apply Filters</button>
+                <button id="applyFiltersBtn" class="btn-primary" onclick="applyFilters()">✓ Apply Filters</button>
                 <button class="btn-secondary" onclick="clearFilters()">✕ Clear All</button>
             </div>
         </div>
@@ -406,7 +532,7 @@
         </div>
 
         <!-- Console Log -->
-        <div class="console" id="console"></div>
+        <div class="console hidden" id="console"></div>
     </div>
 
     <script>
@@ -416,20 +542,45 @@
         const catalog = {
             year: {
                 label: 'Year',
-                table: 'DateTable',
+                table: 'financials',
                 column: 'Year',
+                valueType: 'number',
+                aliases: [
+                    { table: 'financials', column: 'Year' },
+                    { table: 'DateTable', column: 'Year' },
+                    { table: 'Date', column: 'Year' },
+                    { table: 'Financials', column: 'Year' }
+                ],
                 values: ['2013', '2014']
+            },
+            country: {
+                label: 'Country',
+                table: 'financials',
+                column: 'Country',
+                aliases: [
+                    { table: 'financials', column: 'Country' },
+                    { table: 'Financials', column: 'Country' }
+                ],
+                values: ['Canada', 'France', 'Germany', 'Mexico', 'United States of America']
             },
             segment: {
                 label: 'Segment',
                 table: 'Segment',
                 column: 'Segment',
+                aliases: [
+                    { table: 'Segment', column: 'Segment' },
+                    { table: 'Financials', column: 'Segment' }
+                ],
                 values: ['Channel Partners', 'Enterprise', 'Government', 'Midmarket', 'Small Business']
             },
             product: {
                 label: 'Product',
                 table: 'Product',
                 column: 'Product',
+                aliases: [
+                    { table: 'Product', column: 'Product' },
+                    { table: 'Financials', column: 'Product' }
+                ],
                 // Cascade mapping: Segment → Products available for that segment
                 valuesBySegment: {
                     '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'], // Default: all
@@ -446,18 +597,60 @@
         // STATE: Holds filter selections (deferred until Apply)
         // ============================================================================
         let filterState = {
-            year: '',
-            segment: '',
-            product: ''
+            year: [],
+            country: [],
+            segment: [],
+            product: []
+        };
+
+        let lastAppliedState = {
+            year: [],
+            country: [],
+            segment: [],
+            product: []
         };
 
         let report = null;
         let models = null;
+        let embedWatchdog = null;
+        let embedReady = false;
+        let iframeProbeTimer = null;
+        let slicerBindings = {};
+        let filterReportApi = null;
+        let tokenRefreshTimer = null;
+        let currentTokenLease = null;
+        let currentTokenSource = null;
+        const DEBUG_MODE = false;
+        const EMBED_WATCHDOG_MS = 45000;
+
+        function ensurePowerBIService() {
+            const pbiClient = window['powerbi-client'];
+            if (!pbiClient || !pbiClient.service || !pbiClient.factories) {
+                return null;
+            }
+
+            if (!window.powerbi) {
+                window.powerbi = new pbiClient.service.Service(
+                    pbiClient.factories.hpmFactory,
+                    pbiClient.factories.wpmpFactory,
+                    pbiClient.factories.routerFactory
+                );
+            }
+
+            if (!models && pbiClient.models) {
+                models = pbiClient.models;
+            }
+
+            return window.powerbi;
+        }
 
         // ============================================================================
         // LOGGING: Console output for demo transparency
         // ============================================================================
         function log(message, type = 'info') {
+            if (!DEBUG_MODE && typeof message === 'string' && message.startsWith('DEBUG ')) {
+                return;
+            }
             const console_el = document.getElementById('console');
             const line = document.createElement('div');
             line.className = `console-line ${type}`;
@@ -465,6 +658,70 @@
             line.innerHTML = `<span class="timestamp">${timestamp}</span> ${escapeHtml(message)}`;
             console_el.appendChild(line);
             console_el.scrollTop = console_el.scrollHeight;
+        }
+
+        function safeStringify(obj) {
+            try {
+                return JSON.stringify(obj);
+            } catch (_e) {
+                return '[unserializable]';
+            }
+        }
+
+        function maskToken(token) {
+            if (!token) return '[missing]';
+            if (token.length <= 16) return '[redacted-short-token]';
+            return `${token.slice(0, 8)}...${token.slice(-8)} (len=${token.length})`;
+        }
+
+        function logEmbedDiagnostics(stage, details = {}) {
+            if (!DEBUG_MODE) {
+                return;
+            }
+            const diagnostic = {
+                stage,
+                hasPowerbiGlobal: !!window.powerbi,
+                hasPowerbiClientGlobal: !!window['powerbi-client'],
+                hasModels: !!models,
+                embedReady,
+                ...details
+            };
+            log(`DEBUG ${stage}: ${safeStringify(diagnostic)}`, 'warning');
+        }
+
+        function startIframeProbe() {
+            if (!DEBUG_MODE) {
+                return;
+            }
+            stopIframeProbe();
+            iframeProbeTimer = setInterval(() => {
+                const iframe = document.querySelector('#embeddedReport iframe');
+                if (!iframe) {
+                    log('DEBUG iframe: not created yet', 'warning');
+                    return;
+                }
+                const src = iframe.getAttribute('src') || '[empty]';
+                const frameState = {
+                    src: src.length > 180 ? `${src.slice(0, 180)}...` : src,
+                    width: iframe.clientWidth,
+                    height: iframe.clientHeight
+                };
+                log(`DEBUG iframe: ${safeStringify(frameState)}`, 'warning');
+            }, 4000);
+        }
+
+        function stopIframeProbe() {
+            if (iframeProbeTimer) {
+                clearInterval(iframeProbeTimer);
+                iframeProbeTimer = null;
+            }
+        }
+
+        function clearTokenRefreshTimer() {
+            if (tokenRefreshTimer) {
+                clearTimeout(tokenRefreshTimer);
+                tokenRefreshTimer = null;
+            }
         }
 
         function escapeHtml(text) {
@@ -477,83 +734,591 @@
             document.getElementById('console').innerHTML = '';
         }
 
+        function toggleConsoleVisibility() {
+            const consoleEl = document.getElementById('console');
+            const button = document.querySelector('.button-group .btn-secondary');
+            const isHidden = consoleEl.classList.toggle('hidden');
+            if (!isHidden) {
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+            if (button) {
+                button.textContent = isHidden ? 'Show Activity Log' : 'Hide Activity Log';
+            }
+        }
+
+        async function fetchManagedEmbedToken(forceRefresh = false) {
+            const requestUrl = forceRefresh ? './api/embed-token?refresh=1' : './api/embed-token';
+            const response = await fetch(requestUrl, {
+                cache: 'no-store',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const errorPayload = await response.json();
+                    if (errorPayload && errorPayload.message) {
+                        errorMessage = errorPayload.message;
+                    }
+                } catch (_error) {
+                    // Fall back to status-only details.
+                }
+                throw new Error(errorMessage);
+            }
+
+            const payload = await response.json();
+            if (!payload || !payload.token) {
+                throw new Error('Token API returned no token');
+            }
+
+            const tokenInput = document.getElementById('accessToken');
+            const tokenTypeSelect = document.getElementById('tokenType');
+            const embedUrlInput = document.getElementById('embedUrl');
+            const reportIdInput = document.getElementById('reportId');
+
+            tokenInput.value = payload.token;
+            tokenTypeSelect.value = 'embed';
+            if (payload.embedUrl) {
+                embedUrlInput.value = payload.embedUrl;
+            }
+            if (payload.reportId) {
+                reportIdInput.value = payload.reportId;
+            }
+
+            currentTokenLease = {
+                token: payload.token,
+                expiresAt: payload.expiresAt || null,
+                expiresAtUnix: payload.expiresAtUnix || null
+            };
+            currentTokenSource = 'api';
+            updateSessionStatus(`Token ready. Expires at ${payload.expiresAt || 'unknown time'}.`, false);
+
+            log(`Fetched managed embed token from /api/embed-token (${payload.token.length} chars).`, 'success');
+            if (payload.expiresAt) {
+                log(`Managed token expires at ${payload.expiresAt}.`, 'info');
+            }
+            return payload.token;
+        }
+
+        function getTokenExpiryDate(lease) {
+            if (!lease) return null;
+            if (lease.expiresAt) {
+                const parsed = new Date(lease.expiresAt);
+                if (!Number.isNaN(parsed.getTime())) {
+                    return parsed;
+                }
+            }
+            if (lease.expiresAtUnix) {
+                return new Date(Number(lease.expiresAtUnix) * 1000);
+            }
+            return null;
+        }
+
+        function scheduleTokenRefresh() {
+            clearTokenRefreshTimer();
+
+            if (currentTokenSource !== 'api' || !currentTokenLease) {
+                return;
+            }
+
+            const expiry = getTokenExpiryDate(currentTokenLease);
+            if (!expiry) {
+                log('Managed token refresh skipped: token expiry metadata missing.', 'warning');
+                return;
+            }
+
+            const refreshAt = expiry.getTime() - (10 * 60 * 1000);
+            const delay = Math.max(5000, refreshAt - Date.now());
+            tokenRefreshTimer = setTimeout(() => {
+                refreshEmbeddedAccessToken(false).catch((error) => {
+                    const message = error && error.message ? error.message : String(error);
+                    log(`Automatic token refresh failed: ${message}`, 'error');
+                    updateSessionStatus(`Automatic refresh failed: ${message}`, true);
+                });
+            }, delay);
+
+            log(`Scheduled token refresh for ${new Date(Date.now() + delay).toISOString()}.`, 'info');
+        }
+
+        async function refreshEmbeddedAccessToken(forceRefresh = true) {
+            if (currentTokenSource !== 'api') {
+                return null;
+            }
+
+            const nextToken = await fetchManagedEmbedToken(forceRefresh);
+            if (report && typeof report.setAccessToken === 'function') {
+                await report.setAccessToken(nextToken);
+                log('Applied refreshed embed token to the running report.', 'success');
+                updateSessionStatus('Embed token refreshed and applied to the report.', false);
+            }
+            scheduleTokenRefresh();
+            return nextToken;
+        }
+
+        async function initializeManagedEmbed(forceRefresh = false) {
+            clearError();
+            updateStatus('loading');
+            updateSessionStatus('Requesting managed token from the local server.', false);
+
+            try {
+                await fetchManagedEmbedToken(forceRefresh);
+                logEmbedDiagnostics('sdk-ready');
+                log('Managed token ready. Embedding report.', 'success');
+                await embedReport();
+            } catch (error) {
+                const message = error && error.message ? error.message : String(error);
+                currentTokenSource = null;
+                currentTokenLease = null;
+                clearTokenRefreshTimer();
+                updateStatus('error');
+                showError(`Automatic token acquisition failed: ${message}`);
+                updateSessionStatus(`Connection failed: ${message}`, true);
+                log(`Automatic token acquisition failed: ${message}`, 'error');
+            }
+        }
+
         // ============================================================================
         // INITIALIZATION: Populate filter dropdowns on load
         // ============================================================================
-        window.onload = function() {
+        window.onload = async function() {
+            clearConsole();
             populateYearDropdown();
+            populateCountryDropdown();
             populateSegmentDropdown();
             populateProductDropdown();
-            log('Demo initialized. Ready to embed report.', 'success');
+
+            window.addEventListener('error', (event) => {
+                log(`JS runtime error: ${event.message}`, 'error');
+            });
+
+            window.addEventListener('unhandledrejection', (event) => {
+                const reason = event.reason && event.reason.message ? event.reason.message : String(event.reason);
+                log(`Unhandled promise rejection: ${reason}`, 'error');
+            });
+
+            const pbiService = ensurePowerBIService();
+            if (!pbiService || !models) {
+                showError('Power BI client SDK failed to load. This is often a network policy/CDN block. Try localhost and allow jsdelivr/unpkg.');
+                log('✗ powerbi-client SDK unavailable (powerbi is undefined).', 'error');
+                logEmbedDiagnostics('sdk-load-failed');
+                return;
+            }
+            log('Demo initialized. Requesting managed embed token.', 'info');
+            await initializeManagedEmbed(false);
         };
 
         function populateYearDropdown() {
-            const select = document.getElementById('yearFilter');
-            select.innerHTML = '<option value="">-- Select Year --</option>';
-            catalog.year.values.forEach(value => {
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = value;
-                select.appendChild(option);
-            });
+            renderCheckboxOptions('yearFilter', catalog.year.values, filterState.year, onYearChange);
+        }
+
+        function populateCountryDropdown() {
+            renderCheckboxOptions('countryFilter', catalog.country.values, filterState.country, onCountryChange);
         }
 
         function populateSegmentDropdown() {
-            const select = document.getElementById('segmentFilter');
-            select.innerHTML = '<option value="">-- Select Segment --</option>';
-            catalog.segment.values.forEach(value => {
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = value;
-                select.appendChild(option);
+            renderCheckboxOptions('segmentFilter', catalog.segment.values, filterState.segment, onSegmentChange);
+        }
+
+        function populateProductDropdown(segmentValues = []) {
+            const selectedSegments = Array.isArray(segmentValues) ? segmentValues : (segmentValues ? [segmentValues] : []);
+            const products = selectedSegments.length === 0
+                ? catalog.product.valuesBySegment['']
+                : Array.from(new Set(selectedSegments.flatMap((segmentValue) => {
+                    return catalog.product.valuesBySegment[segmentValue] || [];
+                })));
+            const previouslySelected = Array.isArray(filterState.product) ? [...filterState.product] : [];
+
+            filterState.product = previouslySelected.filter((value) => products.includes(value));
+            renderCheckboxOptions('productFilter', products, filterState.product, onProductChange);
+        }
+
+        function renderCheckboxOptions(containerId, values, selectedValues, changeHandler) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const selected = Array.isArray(selectedValues) ? selectedValues : [];
+            container.innerHTML = '';
+            container.classList.toggle('empty', values.length === 0);
+
+            values.forEach((value, index) => {
+                const label = document.createElement('label');
+                label.className = 'filter-option';
+
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.value = value;
+                input.id = `${containerId}_${index}`;
+                input.checked = selected.includes(value);
+                input.addEventListener('change', changeHandler);
+
+                const text = document.createElement('span');
+                text.textContent = value;
+
+                label.appendChild(input);
+                label.appendChild(text);
+                container.appendChild(label);
             });
         }
 
-        function populateProductDropdown(segmentValue = '') {
-            const select = document.getElementById('productFilter');
-            const products = catalog.product.valuesBySegment[segmentValue] || catalog.product.valuesBySegment[''];
-            select.innerHTML = '<option value="">-- Select Product --</option>';
-            products.forEach(value => {
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = value;
-                select.appendChild(option);
+        function getSelectedValues(selectId) {
+            const container = document.getElementById(selectId);
+            if (!container) return [];
+            return Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+                .map((input) => input.value)
+                .filter(Boolean);
+        }
+
+        function arraysEqual(left, right) {
+            const leftValues = Array.isArray(left) ? left : [];
+            const rightValues = Array.isArray(right) ? right : [];
+            if (leftValues.length !== rightValues.length) {
+                return false;
+            }
+            return leftValues.every((value, index) => value === rightValues[index]);
+        }
+
+        function coerceFilterValue(catalogItem, value) {
+            if (!catalogItem || !value) return value;
+            if (catalogItem.valueType === 'number') {
+                const parsed = Number(value);
+                return Number.isNaN(parsed) ? value : parsed;
+            }
+            return value;
+        }
+
+        function getFilterTargets(catalogItem) {
+            const rawTargets = (catalogItem && Array.isArray(catalogItem.aliases) && catalogItem.aliases.length > 0)
+                ? catalogItem.aliases
+                : [{ table: catalogItem.table, column: catalogItem.column }];
+
+            const seen = new Set();
+            const uniqueTargets = [];
+            rawTargets.forEach((target) => {
+                const key = `${target.table}.${target.column}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueTargets.push(target);
+                }
             });
+            return uniqueTargets;
+        }
+
+        function appendBasicFilters(filters, catalogItem, rawValue) {
+            if (!rawValue) return;
+            const coercedValue = coerceFilterValue(catalogItem, rawValue);
+            const targets = getFilterTargets(catalogItem);
+            targets.forEach((target) => {
+                filters.push(
+                    new models.BasicFilter(
+                        { table: target.table, column: target.column },
+                        'In',
+                        [coercedValue]
+                    )
+                );
+            });
+        }
+
+        function identifyFilterKey(text) {
+            const candidate = (text || '').toString().toLowerCase();
+            if (!candidate) return null;
+            if (candidate.includes('year')) return 'year';
+            if (candidate.includes('country')) return 'country';
+            if (candidate.includes('segment')) return 'segment';
+            if (candidate.includes('product')) return 'product';
+            return null;
+        }
+
+        async function discoverSlicerBindings(forceRefresh = false) {
+            if (!report) return {};
+            if (!forceRefresh && Object.keys(slicerBindings).length > 0) {
+                return slicerBindings;
+            }
+
+            const page = await report.getActivePage();
+            const visuals = await page.getVisuals();
+            const discovered = {};
+
+            for (const visual of visuals) {
+                const visualType = (visual.type || '').toLowerCase();
+                if (!visualType.includes('slicer')) {
+                    continue;
+                }
+
+                let slicerState = null;
+                try {
+                    slicerState = await visual.getSlicerState();
+                    log(`DEBUG slicer state for ${visual.title || visual.name}: ${safeStringify(slicerState)}`, 'warning');
+                } catch (_error) {
+                    // Ignore slicers that do not expose state yet.
+                }
+
+                const stateFilters = slicerState && Array.isArray(slicerState.filters) ? slicerState.filters : [];
+                const firstFilterWithTarget = stateFilters.find((f) => f && f.target && f.target.column);
+                const stateTargets = slicerState && Array.isArray(slicerState.targets) ? slicerState.targets : [];
+                const firstStateTarget = stateTargets.find((t) => t && t.table && t.column);
+                const target = firstFilterWithTarget && firstFilterWithTarget.target
+                    ? { table: firstFilterWithTarget.target.table, column: firstFilterWithTarget.target.column }
+                    : (firstStateTarget
+                        ? { table: firstStateTarget.table, column: firstStateTarget.column }
+                        : null);
+
+                const resolvedKey = identifyFilterKey(target && target.column)
+                    || identifyFilterKey(visual.title)
+                    || identifyFilterKey(visual.name);
+
+                if (!resolvedKey || discovered[resolvedKey]) {
+                    continue;
+                }
+
+                discovered[resolvedKey] = {
+                    visualName: visual.name,
+                    visualTitle: visual.title || visual.name,
+                    target: target || getFilterTargets(catalog[resolvedKey])[0]
+                };
+            }
+
+            slicerBindings = discovered;
+            log(`DEBUG slicer bindings: ${safeStringify(slicerBindings)}`, 'warning');
+            return slicerBindings;
+        }
+
+        async function syncDiscoveredSlicersFromFilterState() {
+            const bindings = await discoverSlicerBindings(true);
+            if (!report || Object.keys(bindings).length === 0) {
+                return;
+            }
+
+            const page = await report.getActivePage();
+            const visuals = await page.getVisuals();
+            const visualByName = new Map(visuals.map((visual) => [visual.name, visual]));
+            const applied = [];
+
+            for (const key of ['year', 'country', 'segment', 'product']) {
+                const binding = bindings[key];
+                if (!binding) {
+                    continue;
+                }
+
+                const visual = visualByName.get(binding.visualName);
+                if (!visual) {
+                    continue;
+                }
+
+                const rawValues = Array.isArray(filterState[key]) ? filterState[key] : [];
+                const coercedValues = rawValues.map((value) => coerceFilterValue(catalog[key], value));
+                const slicerFilters = rawValues.length > 0
+                    ? [
+                        new models.BasicFilter(
+                            { table: binding.target.table, column: binding.target.column },
+                            'In',
+                            coercedValues
+                        )
+                    ]
+                    : [];
+
+                await visual.setSlicerState({ filters: slicerFilters });
+                applied.push({
+                    key,
+                    target: binding.target,
+                    value: rawValues.length > 0 ? rawValues : '[cleared]'
+                });
+            }
+
+            if (applied.length > 0) {
+                log(`DEBUG applied slicer states: ${safeStringify(applied)}`, 'warning');
+            }
+        }
+
+        async function applySlicerStatesFromFilterState() {
+            const bindings = await discoverSlicerBindings();
+            const keys = ['year', 'segment', 'product'];
+
+            if (keys.every((key) => !bindings[key])) {
+                log('DEBUG slicer apply skipped: no matching slicer visuals discovered.', 'warning');
+                return [];
+            }
+
+            const page = await report.getActivePage();
+            const visuals = await page.getVisuals();
+            const visualByName = new Map(visuals.map((v) => [v.name, v]));
+            const applied = [];
+
+            for (const key of keys) {
+                const binding = bindings[key];
+                if (!binding) continue;
+
+                const visual = visualByName.get(binding.visualName);
+                if (!visual) continue;
+
+                const rawValue = filterState[key];
+                const coercedValue = coerceFilterValue(catalog[key], rawValue);
+                const slicerFilters = rawValue
+                    ? [
+                        new models.BasicFilter(
+                            { table: binding.target.table, column: binding.target.column },
+                            'In',
+                            [coercedValue]
+                        )
+                    ]
+                    : [];
+
+                try {
+                    await visual.setSlicerState({ filters: slicerFilters });
+                    applied.push({
+                        key,
+                        visual: binding.visualTitle,
+                        target: binding.target,
+                        value: rawValue || '[cleared]'
+                    });
+                } catch (error) {
+                    const details = error && error.message ? error.message : safeStringify(error);
+                    log(`DEBUG slicer apply failed for ${key}: ${details}`, 'warning');
+                }
+            }
+
+            if (applied.length > 0) {
+                log(`DEBUG applied slicer states: ${safeStringify(applied)}`, 'warning');
+            }
+            return applied;
+        }
+
+        function hasPendingFilterChanges() {
+            return !arraysEqual(filterState.year, lastAppliedState.year)
+                || !arraysEqual(filterState.country, lastAppliedState.country)
+                || !arraysEqual(filterState.segment, lastAppliedState.segment)
+                || !arraysEqual(filterState.product, lastAppliedState.product);
+        }
+
+        function buildManagedTargetSet() {
+            const managedTargets = new Set();
+            Object.values(catalog).forEach((catalogItem) => {
+                getFilterTargets(catalogItem).forEach((target) => {
+                    managedTargets.add(`${target.table}.${target.column}`.toLowerCase());
+                });
+            });
+            return managedTargets;
+        }
+
+        function isManagedFilterTarget(target, managedTargets) {
+            if (!target || !target.table || !target.column) {
+                return false;
+            }
+
+            return managedTargets.has(`${target.table}.${target.column}`.toLowerCase());
+        }
+
+        function submitFiltersLegacy(filters) {
+            if (!filterReportApi || typeof filterReportApi.getFilters !== 'function' || typeof filterReportApi.setFilters !== 'function') {
+                return Promise.reject(new Error('Legacy filter API not ready yet.'));
+            }
+
+            const managedTargets = buildManagedTargetSet();
+
+            return filterReportApi.getFilters()
+                .then((existingFilters) => {
+                    const currentFilters = Array.isArray(existingFilters) ? existingFilters : [];
+                    const unmanagedFilters = currentFilters.filter((filter) => !isManagedFilterTarget(filter && filter.target, managedTargets));
+                    return filterReportApi.setFilters(unmanagedFilters.concat(filters || []));
+                });
+        }
+
+        function clearFiltersLegacy() {
+            if (!filterReportApi || !models || !models.FiltersOperations) {
+                return Promise.reject(new Error('Legacy filter API not ready yet.'));
+            }
+
+            return filterReportApi.updateFilters(models.FiltersOperations.RemoveAll, []);
+        }
+
+        function selectedFilterCount() {
+            let count = 0;
+            count += filterState.year.length;
+            count += filterState.country.length;
+            count += filterState.segment.length;
+            count += filterState.product.length;
+            return count;
+        }
+
+        function refreshApplyButtonState() {
+            const btn = document.getElementById('applyFiltersBtn');
+            if (!btn) return;
+
+            const pending = hasPendingFilterChanges();
+            const count = selectedFilterCount();
+
+            if (!pending) {
+                btn.textContent = '✓ Apply Filters';
+                btn.style.opacity = '0.75';
+                return;
+            }
+
+            btn.textContent = count > 0 ? `✓ Apply Filters (${count} pending)` : '✓ Apply Filters (clear pending)';
+            btn.style.opacity = '1';
         }
 
         // ============================================================================
         // FILTER INTERACTIONS: Deferred execution (selections accumulate locally)
         // ============================================================================
         function onYearChange() {
-            const value = document.getElementById('yearFilter').value;
-            filterState.year = value;
-            log(`Year selected: "${value}" (deferred — not sent to PBI yet)`, 'info');
+            const values = getSelectedValues('yearFilter');
+            filterState.year = values;
+            log(`Year selected: ${safeStringify(values)} (deferred — not sent to PBI yet)`, 'info');
+            refreshApplyButtonState();
+        }
+
+        function onCountryChange() {
+            const values = getSelectedValues('countryFilter');
+            filterState.country = values;
+            log(`Country selected: ${safeStringify(values)} (deferred)`, 'info');
+            refreshApplyButtonState();
         }
 
         function onSegmentChange() {
-            const value = document.getElementById('segmentFilter').value;
-            filterState.segment = value;
-            log(`Segment selected: "${value}" (deferred)`, 'info');
+            const values = getSelectedValues('segmentFilter');
+            filterState.segment = values;
+            log(`Segment selected: ${safeStringify(values)} (deferred)`, 'info');
             
             // CASCADE: Update product dropdown
-            populateProductDropdown(value);
-            filterState.product = ''; // Reset product when segment changes
-            log(`✓ Product dropdown cascade: showing products for Segment "${value}"`, 'success');
+            populateProductDropdown(values);
+            log(`✓ Product dropdown cascade: showing products for Segment ${safeStringify(values)}`, 'success');
+            refreshApplyButtonState();
+        }
+
+        function onProductChange() {
+            const values = getSelectedValues('productFilter');
+            filterState.product = values;
+            log(`Product selected: ${safeStringify(values)} (deferred)`, 'info');
+            refreshApplyButtonState();
         }
 
         // ============================================================================
         // APPLY & CLEAR: Send filter state to Power BI
         // ============================================================================
         function applyFilters() {
-            if (!models) {
-                showError('Report not embedded yet. Embed first.');
+            if (!filterReportApi) {
+                showError('Report not embedded yet. Wait for initialization to finish or click Retry Connection.');
                 return;
             }
 
+            if (!embedReady) {
+                log('DEBUG apply requested before embedReady=true; attempting apply anyway.', 'warning');
+            }
+
+            // Always sync from UI controls at apply-time so repeated re-apply uses latest values.
+            filterState.year = getSelectedValues('yearFilter');
+            filterState.country = getSelectedValues('countryFilter');
+            filterState.segment = getSelectedValues('segmentFilter');
+            filterState.product = getSelectedValues('productFilter');
+
+            clearError();
+
             const filters = [];
 
-            // Build filter array for updateFilters
-            if (filterState.year) {
+            // Use the original v3/v4 path: one target per logical field and a single Replace call.
+            if (filterState.year.length > 0) {
+                const yearValues = filterState.year.map((value) => coerceFilterValue(catalog.year, value));
                 filters.push({
                     $schema: 'http://powerbi.com/product/schema#advanced',
                     target: {
@@ -561,11 +1326,23 @@
                         column: catalog.year.column
                     },
                     operator: 'In',
-                    values: [filterState.year]
+                    values: yearValues
                 });
             }
 
-            if (filterState.segment) {
+            if (filterState.country.length > 0) {
+                filters.push({
+                    $schema: 'http://powerbi.com/product/schema#advanced',
+                    target: {
+                        table: catalog.country.table,
+                        column: catalog.country.column
+                    },
+                    operator: 'In',
+                    values: filterState.country
+                });
+            }
+
+            if (filterState.segment.length > 0) {
                 filters.push({
                     $schema: 'http://powerbi.com/product/schema#advanced',
                     target: {
@@ -573,11 +1350,11 @@
                         column: catalog.segment.column
                     },
                     operator: 'In',
-                    values: [filterState.segment]
+                    values: filterState.segment
                 });
             }
 
-            if (filterState.product) {
+            if (filterState.product.length > 0) {
                 filters.push({
                     $schema: 'http://powerbi.com/product/schema#advanced',
                     target: {
@@ -585,50 +1362,88 @@
                         column: catalog.product.column
                     },
                     operator: 'In',
-                    values: [filterState.product]
+                    values: filterState.product
                 });
             }
 
-            log(`Apply pressed — sending ${filters.length} filter(s) in one call`, 'warning');
-            
-            models.report.updateFilters(powerbi.models.FiltersOperations.Replace, filters)
+            log(`DEBUG apply payload: ${safeStringify(filters)}`, 'warning');
+            log(`Apply pressed — sending ${filters.length} filter(s) in one call`, 'info');
+
+            submitFiltersLegacy(filters)
                 .then(() => {
+                    return syncDiscoveredSlicersFromFilterState();
+                })
+                .then(() => {
+                    lastAppliedState = { ...filterState };
+                    refreshApplyButtonState();
+                    updateSessionStatus(`Applied ${filters.length} filter group(s) to the embedded report.`, false);
                     log('✓ Filters applied successfully. All selections sent to PBI in one updateFilters() call.', 'success');
                 })
                 .catch(error => {
+                    updateSessionStatus(`Filter apply failed: ${error.message}`, true);
                     log(`✗ Filter error: ${error.message}`, 'error');
                 });
         }
 
         function clearFilters() {
-            if (!models) {
-                showError('Report not embedded yet.');
+            if (!filterReportApi) {
+                showError('Report not embedded yet. Wait for initialization to finish or click Retry Connection.');
                 return;
             }
 
-            filterState = { year: '', segment: '', product: '' };
-            document.getElementById('yearFilter').value = '';
-            document.getElementById('segmentFilter').value = '';
-            document.getElementById('productFilter').value = '';
-            populateProductDropdown('');
+            if (!embedReady) {
+                log('DEBUG clear requested before embedReady=true; attempting clear anyway.', 'warning');
+            }
 
-            models.report.updateFilters(powerbi.models.FiltersOperations.RemoveAll, [])
+            filterState = { year: [], country: [], segment: [], product: [] };
+            lastAppliedState = { ...lastAppliedState, year: [], country: [], segment: [], product: [] };
+            Array.from(document.querySelectorAll('#yearFilter input, #countryFilter input, #segmentFilter input, #productFilter input')).forEach((input) => {
+                input.checked = false;
+            });
+            populateYearDropdown();
+            populateCountryDropdown();
+            populateSegmentDropdown();
+            populateProductDropdown([]);
+            clearError();
+
+            clearFiltersLegacy()
                 .then(() => {
+                    return syncDiscoveredSlicersFromFilterState();
+                })
+                .then(() => {
+                    refreshApplyButtonState();
+                    updateSessionStatus('All report filters cleared.', false);
                     log('✓ Filters cleared. One updateFilters(RemoveAll, []) call sent to PBI.', 'success');
                 })
                 .catch(error => {
-                    log(`✗ Clear error: ${error.message}`, 'error');
+                    const details = error && error.message ? error.message : safeStringify(error);
+                    log(`✗ Clear error: ${details}`, 'error');
+                    updateSessionStatus(`Clear failed: ${details}`, true);
+                    showError(`Clear failed: ${details}`);
                 });
         }
 
         // ============================================================================
         // EMBEDDING: Load and configure report
         // ============================================================================
-        function embedReport() {
-            const embedUrl = document.getElementById('embedUrl').value;
-            const reportId = document.getElementById('reportId').value;
-            const tokenType = document.getElementById('tokenType').value;
-            const accessToken = document.getElementById('accessToken').value;
+        async function embedReport() {
+            const pbiService = ensurePowerBIService();
+            if (!pbiService || !models) {
+                showError('Power BI SDK not loaded. Check network policy/proxy and retry.');
+                log('✗ Embed blocked: powerbi-client SDK not loaded.', 'error');
+                return;
+            }
+
+            let embedUrl = document.getElementById('embedUrl').value;
+            let reportId = document.getElementById('reportId').value;
+            const tokenType = 'embed';
+            let accessToken = document.getElementById('accessToken').value;
+
+            if (!accessToken) {
+                accessToken = await fetchManagedEmbedToken(false);
+                embedUrl = document.getElementById('embedUrl').value;
+                reportId = document.getElementById('reportId').value;
+            }
 
             // Validation
             if (!embedUrl || !reportId || !accessToken) {
@@ -638,57 +1453,157 @@
 
             clearError();
             updateStatus('loading');
+            updateSessionStatus('Embedding report with the current managed token.', false);
             log('Embedding report...', 'info');
+            embedReady = false;
+            filterReportApi = null;
+            clearTokenRefreshTimer();
+
+            logEmbedDiagnostics('embed-start', {
+                embedUrlPreview: embedUrl,
+                reportId,
+                tokenTypeSelected: tokenType,
+                tokenPreview: maskToken(accessToken)
+            });
+
+            // Make only the report target visible before embed to avoid render deadlocks.
+            document.getElementById('reportContainer').classList.add('active');
 
             const config = {
                 type: 'report',
                 id: reportId,
                 embedUrl: embedUrl,
                 accessToken: accessToken,
-                tokenType: tokenType === 'aad' ? powerbi.models.TokenType.Aad : powerbi.models.TokenType.Embed,
+                tokenType: models.TokenType.Embed,
                 settings: {
                     filterPaneEnabled: false,
                     navContentPaneEnabled: false
                 }
             };
 
+            logEmbedDiagnostics('embed-config-ready', {
+                configSummary: {
+                    type: config.type,
+                    id: config.id,
+                    tokenType: tokenType,
+                    hasAccessToken: !!config.accessToken
+                }
+            });
+
             const reportContainer = document.getElementById('embeddedReport');
+            // Always reset previous embed instance on the same element.
+            // Without reset(), re-embedding can bind to a stale component and never recreate iframe.
+            try {
+                pbiService.reset(reportContainer);
+                log('DEBUG reset previous embed instance on container', 'warning');
+            } catch (resetError) {
+                log(`DEBUG reset warning: ${safeStringify(resetError)}`, 'warning');
+            }
+
             reportContainer.innerHTML = '';
+            if (embedWatchdog) {
+                clearTimeout(embedWatchdog);
+            }
+            startIframeProbe();
+            embedWatchdog = setTimeout(() => {
+                log('Embed is taking longer than expected. Slow initial loads can be normal, but also check workspace access and token validity if it never resolves.', 'warning');
+                showError('Embed is still loading after 45 seconds. Slow first loads can be normal; if it never resolves, check workspace access and token validity.');
+                logEmbedDiagnostics('embed-timeout');
+            }, EMBED_WATCHDOG_MS);
 
             try {
-                report = powerbi.embed(reportContainer, config);
+                report = pbiService.embed(reportContainer, config);
+                logEmbedDiagnostics('embed-call-returned', {
+                    reportObjectPresent: !!report
+                });
                 
                 report.on('loaded', function() {
+                    if (embedWatchdog) {
+                        clearTimeout(embedWatchdog);
+                        embedWatchdog = null;
+                    }
                     log('Report loaded', 'success');
+                    embedReady = true;
+                    logEmbedDiagnostics('event-loaded');
+                    // Some browsers never emit rendered when embedding in constrained layouts.
+                    // Enable UI on loaded as a fallback so the app does not look hung.
+                    updateStatus('success');
+                    updateSessionStatus('Report loaded. Filter UI is ready.', false);
+                    document.getElementById('filterSection').classList.add('active');
+                    document.getElementById('reportContainer').classList.add('active');
+                    refreshApplyButtonState();
+                    scheduleTokenRefresh();
                 });
 
                 report.on('rendered', function() {
+                    if (embedWatchdog) {
+                        clearTimeout(embedWatchdog);
+                        embedWatchdog = null;
+                    }
+                    embedReady = true;
                     log('Report rendered', 'success');
+                    logEmbedDiagnostics('event-rendered');
                     log('✓ Filter panel injected above report', 'success');
                     updateStatus('success');
+                    updateSessionStatus('Report rendered successfully.', false);
                     document.getElementById('filterSection').classList.add('active');
                     document.getElementById('reportContainer').classList.add('active');
+                    refreshApplyButtonState();
+                    stopIframeProbe();
+                    scheduleTokenRefresh();
+
+                    discoverSlicerBindings(true)
+                        .catch((err) => {
+                            log(`DEBUG slicer discovery failed: ${err && err.message ? err.message : err}`, 'warning');
+                        });
                 });
 
                 report.on('error', function(event) {
-                    log(`Report error: ${event.detail.message}`, 'error');
+                    if (embedWatchdog) {
+                        clearTimeout(embedWatchdog);
+                        embedWatchdog = null;
+                    }
+                    embedReady = false;
+                    const message = event && event.detail && event.detail.message
+                        ? event.detail.message
+                        : 'Unknown embedding error';
+                    const eventDetails = event && event.detail ? event.detail : {};
+                    log(`Report error: ${message}`, 'error');
+                    log(`Report error details: ${safeStringify(eventDetails)}`, 'error');
+                    showError(`Embed error: ${message}`);
                     updateStatus('error');
+                    updateSessionStatus(`Embed error: ${message}`, true);
+                    logEmbedDiagnostics('event-error');
+                    stopIframeProbe();
                 });
 
-                // Get models for filter operations
                 report.on('loaded', () => {
-                    report.getExplorer().then(explorer => {
-                        models = { report: report };
-                        log('✓ Report API ready for filter updates', 'success');
-                    }).catch(err => {
-                        log(`Warning: Could not initialize API: ${err}`, 'warning');
-                    });
+                    log('✓ Report API ready for filter updates', 'success');
+                    filterReportApi = report;
+                    report.getPages()
+                        .then((pages) => {
+                            const pageNames = pages.map(p => p.name);
+                            log(`DEBUG pages loaded: ${safeStringify(pageNames)}`, 'warning');
+                        })
+                        .catch((err) => {
+                            log(`DEBUG getPages failed: ${err && err.message ? err.message : err}`, 'warning');
+                        });
                 });
 
             } catch (error) {
+                if (embedWatchdog) {
+                    clearTimeout(embedWatchdog);
+                    embedWatchdog = null;
+                }
+                embedReady = false;
                 showError(`Embed error: ${error.message}`);
                 updateStatus('error');
+                updateSessionStatus(`Embed failed: ${error.message}`, true);
                 log(`✗ Embed failed: ${error.message}`, 'error');
+                logEmbedDiagnostics('embed-exception', {
+                    errorMessage: error && error.message ? error.message : String(error)
+                });
+                stopIframeProbe();
             }
         }
 
@@ -709,7 +1624,46 @@
         function updateStatus(status) {
             const indicator = document.getElementById('statusIndicator');
             indicator.className = `status-indicator ${status}`;
+            const statusText = document.getElementById('connectionStatusText');
+            if (!statusText) {
+                return;
+            }
+            statusText.className = `connection-pill ${status}`;
+            if (status === 'loading') {
+                statusText.textContent = 'Connecting';
+            } else if (status === 'success') {
+                statusText.textContent = 'Connected';
+            } else if (status === 'error') {
+                statusText.textContent = 'Attention Needed';
+            } else {
+                statusText.textContent = 'Idle';
+            }
+        }
+
+        function updateSessionStatus(message, isError) {
+            const sessionEl = document.getElementById('sessionStatusText');
+            if (!sessionEl) {
+                return;
+            }
+            sessionEl.textContent = message;
+            sessionEl.className = isError ? 'status-card-value' : 'status-card-value muted';
         }
     </script>
 </body>
 </html>
+*** Add File: c:\Users\seankelley\OneDrive - Microsoft\Documents\VISA\Slicer\Demo\.vscode\tasks.json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start VISA Demo Server",
+      "type": "shell",
+      "command": "python .\\src\\demo_server.py",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}
