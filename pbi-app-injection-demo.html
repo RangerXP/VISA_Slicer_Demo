@@ -447,7 +447,7 @@
         <div class="header">
             <h1>🎯 VISA Slicer Demo - Power BI Embedded</h1>
             <div class="description">
-                <strong>Demonstrates:</strong> Cascading filters (Segment → Product), deferred execution (filters apply only on "Apply"), 
+                <strong>Demonstrates:</strong> Cascading filters (Year → Country → Segment → Product), deferred execution (filters apply only on "Apply"), 
                 and mobile-friendly interaction. Selections sit in JavaScript state; only one <code>updateFilters()</code> call fires to Power BI.
             </div>
         </div>
@@ -516,7 +516,7 @@
                     <div id="segmentFilter" class="filter-options"></div>
                 </div>
                 <div class="filter-group">
-                    <label>Product (cascades from Segment)</label>
+                    <label>Product (cascades from Country + Segment)</label>
                     <div id="productFilter" class="filter-options"></div>
                 </div>
             </div>
@@ -561,7 +561,12 @@
                     { table: 'financials', column: 'Country' },
                     { table: 'Financials', column: 'Country' }
                 ],
-                values: ['Canada', 'France', 'Germany', 'Mexico', 'United States of America']
+                values: ['Canada', 'France', 'Germany', 'Mexico', 'United States of America'],
+                valuesByYear: {
+                    '': ['Canada', 'France', 'Germany', 'Mexico', 'United States of America'],
+                    '2013': ['Canada', 'France', 'Germany'],
+                    '2014': ['Mexico', 'United States of America']
+                }
             },
             segment: {
                 label: 'Segment',
@@ -571,7 +576,28 @@
                     { table: 'Segment', column: 'Segment' },
                     { table: 'Financials', column: 'Segment' }
                 ],
-                values: ['Channel Partners', 'Enterprise', 'Government', 'Midmarket', 'Small Business']
+                values: ['Channel Partners', 'Enterprise', 'Government', 'Midmarket', 'Small Business'],
+                valuesByYearCountry: {
+                    '': {
+                        '': ['Channel Partners', 'Enterprise', 'Government', 'Midmarket', 'Small Business'],
+                        'Canada': ['Enterprise', 'Government', 'Midmarket'],
+                        'France': ['Channel Partners', 'Enterprise', 'Government'],
+                        'Germany': ['Channel Partners', 'Government', 'Midmarket', 'Small Business'],
+                        'Mexico': ['Enterprise', 'Midmarket', 'Small Business'],
+                        'United States of America': ['Enterprise', 'Government', 'Small Business']
+                    },
+                    '2013': {
+                        '': ['Channel Partners', 'Enterprise', 'Government', 'Midmarket', 'Small Business'],
+                        'Canada': ['Enterprise', 'Government', 'Midmarket'],
+                        'France': ['Channel Partners', 'Enterprise', 'Government'],
+                        'Germany': ['Channel Partners', 'Government', 'Midmarket', 'Small Business']
+                    },
+                    '2014': {
+                        '': ['Enterprise', 'Government', 'Midmarket', 'Small Business'],
+                        'Mexico': ['Enterprise', 'Midmarket', 'Small Business'],
+                        'United States of America': ['Enterprise', 'Government', 'Small Business']
+                    }
+                }
             },
             product: {
                 label: 'Product',
@@ -581,14 +607,98 @@
                     { table: 'Product', column: 'Product' },
                     { table: 'Financials', column: 'Product' }
                 ],
-                // Cascade mapping: Segment → Products available for that segment
-                valuesBySegment: {
-                    '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'], // Default: all
-                    'Channel Partners': ['Amarilla', 'Montana', 'Paseo'],
-                    'Enterprise': ['Carretera', 'Velo', 'VTT'],
-                    'Government': ['Amarilla', 'Carretera', 'Montana'],
-                    'Midmarket': ['Montana', 'Paseo', 'Velo'],
-                    'Small Business': ['Amarilla', 'Paseo', 'VTT']
+                valuesByYearCountrySegment: {
+                    '': {
+                        '': {
+                            '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'],
+                            'Channel Partners': ['Amarilla', 'Montana', 'Paseo'],
+                            'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana'],
+                            'Midmarket': ['Montana', 'Paseo', 'Velo'],
+                            'Small Business': ['Amarilla', 'Paseo', 'VTT']
+                        },
+                        'Canada': {
+                            '': ['Carretera', 'Montana', 'Paseo', 'Velo'],
+                            'Enterprise': ['Carretera', 'Velo'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana'],
+                            'Midmarket': ['Montana', 'Paseo', 'Velo']
+                        },
+                        'France': {
+                            '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'VTT'],
+                            'Channel Partners': ['Amarilla', 'Montana', 'Paseo'],
+                            'Enterprise': ['Carretera', 'VTT'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana']
+                        },
+                        'Germany': {
+                            '': ['Amarilla', 'Montana', 'Paseo', 'Velo', 'VTT'],
+                            'Channel Partners': ['Amarilla', 'Montana'],
+                            'Government': ['Amarilla', 'Montana'],
+                            'Midmarket': ['Montana', 'Paseo', 'Velo'],
+                            'Small Business': ['Paseo', 'VTT']
+                        },
+                        'Mexico': {
+                            '': ['Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'],
+                            'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                            'Midmarket': ['Montana', 'Paseo'],
+                            'Small Business': ['Paseo', 'VTT']
+                        },
+                        'United States of America': {
+                            '': ['Amarilla', 'Carretera', 'Paseo', 'VTT'],
+                            'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana'],
+                            'Small Business': ['Amarilla', 'Paseo', 'VTT']
+                        }
+                    },
+                    '2013': {
+                        '': {
+                            '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'],
+                            'Channel Partners': ['Amarilla', 'Montana', 'Paseo'],
+                            'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana'],
+                            'Midmarket': ['Montana', 'Paseo', 'Velo'],
+                            'Small Business': ['Paseo', 'VTT']
+                        },
+                        'Canada': {
+                            '': ['Carretera', 'Montana', 'Paseo', 'Velo'],
+                            'Enterprise': ['Carretera', 'Velo'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana'],
+                            'Midmarket': ['Montana', 'Paseo', 'Velo']
+                        },
+                        'France': {
+                            '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'VTT'],
+                            'Channel Partners': ['Amarilla', 'Montana', 'Paseo'],
+                            'Enterprise': ['Carretera', 'VTT'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana']
+                        },
+                        'Germany': {
+                            '': ['Amarilla', 'Montana', 'Paseo', 'Velo', 'VTT'],
+                            'Channel Partners': ['Amarilla', 'Montana'],
+                            'Government': ['Amarilla', 'Montana'],
+                            'Midmarket': ['Montana', 'Paseo', 'Velo'],
+                            'Small Business': ['Paseo', 'VTT']
+                        }
+                    },
+                    '2014': {
+                        '': {
+                            '': ['Amarilla', 'Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'],
+                            'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana'],
+                            'Midmarket': ['Montana', 'Paseo'],
+                            'Small Business': ['Amarilla', 'Paseo', 'VTT']
+                        },
+                        'Mexico': {
+                            '': ['Carretera', 'Montana', 'Paseo', 'Velo', 'VTT'],
+                            'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                            'Midmarket': ['Montana', 'Paseo'],
+                            'Small Business': ['Paseo', 'VTT']
+                        },
+                        'United States of America': {
+                            '': ['Amarilla', 'Carretera', 'Paseo', 'VTT'],
+                            'Enterprise': ['Carretera', 'Velo', 'VTT'],
+                            'Government': ['Amarilla', 'Carretera', 'Montana'],
+                            'Small Business': ['Amarilla', 'Paseo', 'VTT']
+                        }
+                    }
                 }
             }
         };
@@ -746,6 +856,83 @@
             }
         }
 
+        function getAvailableCountries(yearValues = []) {
+            const selectedYears = Array.isArray(yearValues) ? yearValues : (yearValues ? [yearValues] : []);
+            if (selectedYears.length === 0) {
+                return catalog.country.valuesByYear[''] || catalog.country.values;
+            }
+
+            return Array.from(new Set(selectedYears.flatMap((yearValue) => {
+                return catalog.country.valuesByYear[yearValue] || [];
+            })));
+        }
+
+        function populateCountryDropdown(yearValues = []) {
+            const countries = getAvailableCountries(yearValues);
+            const previouslySelected = Array.isArray(filterState.country) ? [...filterState.country] : [];
+
+            filterState.country = previouslySelected.filter((value) => countries.includes(value));
+            renderCheckboxOptions('countryFilter', countries, filterState.country, onCountryChange);
+        }
+
+        function getAvailableSegments(yearValues = [], countryValues = []) {
+            const selectedYears = Array.isArray(yearValues) ? yearValues : (yearValues ? [yearValues] : []);
+            const selectedCountries = Array.isArray(countryValues) ? countryValues : (countryValues ? [countryValues] : []);
+            const yearsToUse = selectedYears.length > 0 ? selectedYears : [''];
+            const countryFallback = catalog.segment.valuesByYearCountry[''] || {};
+
+            return Array.from(new Set(yearsToUse.flatMap((yearValue) => {
+                const yearMap = catalog.segment.valuesByYearCountry[yearValue] || countryFallback;
+                if (selectedCountries.length === 0) {
+                    return yearMap[''] || countryFallback[''] || catalog.segment.values;
+                }
+
+                return selectedCountries.flatMap((countryValue) => {
+                    return yearMap[countryValue] || [];
+                });
+            })));
+        }
+
+        function populateSegmentDropdown(yearValues = [], countryValues = []) {
+            const segments = getAvailableSegments(yearValues, countryValues);
+            const previouslySelected = Array.isArray(filterState.segment) ? [...filterState.segment] : [];
+
+            filterState.segment = previouslySelected.filter((value) => segments.includes(value));
+            renderCheckboxOptions('segmentFilter', segments, filterState.segment, onSegmentChange);
+        }
+
+        function getAvailableProducts(yearValues = [], countryValues = [], segmentValues = []) {
+            const selectedYears = Array.isArray(yearValues) ? yearValues : (yearValues ? [yearValues] : []);
+            const selectedCountries = Array.isArray(countryValues) ? countryValues : (countryValues ? [countryValues] : []);
+            const selectedSegments = Array.isArray(segmentValues) ? segmentValues : (segmentValues ? [segmentValues] : []);
+            const yearsToUse = selectedYears.length > 0 ? selectedYears : [''];
+            const yearFallback = catalog.product.valuesByYearCountrySegment[''] || {};
+
+            return Array.from(new Set(yearsToUse.flatMap((yearValue) => {
+                const yearMap = catalog.product.valuesByYearCountrySegment[yearValue] || yearFallback;
+                const countriesToUse = selectedCountries.length > 0 ? selectedCountries : [''];
+
+                return countriesToUse.flatMap((countryValue) => {
+                    const countryMap = yearMap[countryValue] || {};
+                    if (selectedSegments.length === 0) {
+                        return countryMap[''] || [];
+                    }
+
+                    return selectedSegments.flatMap((segmentValue) => {
+                        return countryMap[segmentValue] || [];
+                    });
+                });
+            })));
+        }
+
+        function populateProductDropdown(yearValues = [], countryValues = [], segmentValues = []) {
+            const products = getAvailableProducts(yearValues, countryValues, segmentValues);
+            const previouslySelected = Array.isArray(filterState.product) ? [...filterState.product] : [];
+
+            filterState.product = previouslySelected.filter((value) => products.includes(value));
+            renderCheckboxOptions('productFilter', products, filterState.product, onProductChange);
+        }
+
         async function fetchManagedEmbedToken(forceRefresh = false) {
             const requestUrl = forceRefresh ? './api/embed-token?refresh=1' : './api/embed-token';
             const response = await fetch(requestUrl, {
@@ -885,9 +1072,9 @@
         window.onload = async function() {
             clearConsole();
             populateYearDropdown();
-            populateCountryDropdown();
-            populateSegmentDropdown();
-            populateProductDropdown();
+            populateCountryDropdown([]);
+            populateSegmentDropdown([], []);
+            populateProductDropdown([], [], []);
 
             window.addEventListener('error', (event) => {
                 log(`JS runtime error: ${event.message}`, 'error');
@@ -911,27 +1098,6 @@
 
         function populateYearDropdown() {
             renderCheckboxOptions('yearFilter', catalog.year.values, filterState.year, onYearChange);
-        }
-
-        function populateCountryDropdown() {
-            renderCheckboxOptions('countryFilter', catalog.country.values, filterState.country, onCountryChange);
-        }
-
-        function populateSegmentDropdown() {
-            renderCheckboxOptions('segmentFilter', catalog.segment.values, filterState.segment, onSegmentChange);
-        }
-
-        function populateProductDropdown(segmentValues = []) {
-            const selectedSegments = Array.isArray(segmentValues) ? segmentValues : (segmentValues ? [segmentValues] : []);
-            const products = selectedSegments.length === 0
-                ? catalog.product.valuesBySegment['']
-                : Array.from(new Set(selectedSegments.flatMap((segmentValue) => {
-                    return catalog.product.valuesBySegment[segmentValue] || [];
-                })));
-            const previouslySelected = Array.isArray(filterState.product) ? [...filterState.product] : [];
-
-            filterState.product = previouslySelected.filter((value) => products.includes(value));
-            renderCheckboxOptions('productFilter', products, filterState.product, onProductChange);
         }
 
         function renderCheckboxOptions(containerId, values, selectedValues, changeHandler) {
@@ -1265,6 +1431,11 @@
             const values = getSelectedValues('yearFilter');
             filterState.year = values;
             log(`Year selected: ${safeStringify(values)} (deferred — not sent to PBI yet)`, 'info');
+
+            populateCountryDropdown(values);
+            populateSegmentDropdown(values, filterState.country);
+            populateProductDropdown(values, filterState.country, filterState.segment);
+            log(`✓ Country dropdown cascade: showing countries for Year ${safeStringify(values)}`, 'success');
             refreshApplyButtonState();
         }
 
@@ -1272,6 +1443,10 @@
             const values = getSelectedValues('countryFilter');
             filterState.country = values;
             log(`Country selected: ${safeStringify(values)} (deferred)`, 'info');
+
+            populateSegmentDropdown(filterState.year, values);
+            populateProductDropdown(filterState.year, values, filterState.segment);
+            log(`✓ Segment dropdown cascade: showing segments for Year ${safeStringify(filterState.year)} and Country ${safeStringify(values)}`, 'success');
             refreshApplyButtonState();
         }
 
@@ -1280,9 +1455,8 @@
             filterState.segment = values;
             log(`Segment selected: ${safeStringify(values)} (deferred)`, 'info');
             
-            // CASCADE: Update product dropdown
-            populateProductDropdown(values);
-            log(`✓ Product dropdown cascade: showing products for Segment ${safeStringify(values)}`, 'success');
+            populateProductDropdown(filterState.year, filterState.country, values);
+            log(`✓ Product dropdown cascade: showing products for Year ${safeStringify(filterState.year)}, Country ${safeStringify(filterState.country)} and Segment ${safeStringify(values)}`, 'success');
             refreshApplyButtonState();
         }
 
@@ -1401,9 +1575,9 @@
                 input.checked = false;
             });
             populateYearDropdown();
-            populateCountryDropdown();
-            populateSegmentDropdown();
-            populateProductDropdown([]);
+            populateCountryDropdown([]);
+            populateSegmentDropdown([], []);
+            populateProductDropdown([], [], []);
             clearError();
 
             clearFiltersLegacy()

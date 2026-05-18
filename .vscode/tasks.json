@@ -10,6 +10,16 @@
       },
       "isBackground": false,
       "problemMatcher": []
+    },
+    {
+      "label": "Stop VISA Demo Server",
+      "type": "shell",
+      "command": ".\\scripts\\demo_shutdown.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": false,
+      "problemMatcher": []
     }
   ]
 }
