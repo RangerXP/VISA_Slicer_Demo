@@ -1172,15 +1172,17 @@
         }
 
         function appendBasicFilters(filters, catalogItem, rawValue) {
-            if (!rawValue) return;
-            const coercedValue = coerceFilterValue(catalogItem, rawValue);
+            const rawValues = Array.isArray(rawValue) ? rawValue.filter((value) => value !== undefined && value !== null && value !== '') : [rawValue];
+            if (rawValues.length === 0) return;
+
+            const coercedValues = rawValues.map((value) => coerceFilterValue(catalogItem, value));
             const targets = getFilterTargets(catalogItem);
             targets.forEach((target) => {
                 filters.push(
                     new models.BasicFilter(
                         { table: target.table, column: target.column },
                         'In',
-                        [coercedValue]
+                        coercedValues
                     )
                 );
             });
@@ -1250,6 +1252,29 @@
             return slicerBindings;
         }
 
+        function getDerivedSlicerValues(key) {
+            const selectedValues = Array.isArray(filterState[key]) ? filterState[key] : [];
+            if (selectedValues.length > 0) {
+                return selectedValues;
+            }
+
+            if (key === 'country') {
+                return filterState.year.length > 0 ? getAvailableCountries(filterState.year) : [];
+            }
+
+            if (key === 'segment') {
+                const hasUpstreamSelection = filterState.year.length > 0 || filterState.country.length > 0;
+                return hasUpstreamSelection ? getAvailableSegments(filterState.year, filterState.country) : [];
+            }
+
+            if (key === 'product') {
+                const hasUpstreamSelection = filterState.year.length > 0 || filterState.country.length > 0 || filterState.segment.length > 0;
+                return hasUpstreamSelection ? getAvailableProducts(filterState.year, filterState.country, filterState.segment) : [];
+            }
+
+            return [];
+        }
+
         async function syncDiscoveredSlicersFromFilterState() {
             const bindings = await discoverSlicerBindings(true);
             if (!report || Object.keys(bindings).length === 0) {
@@ -1272,7 +1297,7 @@
                     continue;
                 }
 
-                const rawValues = Array.isArray(filterState[key]) ? filterState[key] : [];
+                const rawValues = getDerivedSlicerValues(key);
                 const coercedValues = rawValues.map((value) => coerceFilterValue(catalog[key], value));
                 const slicerFilters = rawValues.length > 0
                     ? [
@@ -1490,55 +1515,10 @@
 
             const filters = [];
 
-            // Use the original v3/v4 path: one target per logical field and a single Replace call.
-            if (filterState.year.length > 0) {
-                const yearValues = filterState.year.map((value) => coerceFilterValue(catalog.year, value));
-                filters.push({
-                    $schema: 'http://powerbi.com/product/schema#advanced',
-                    target: {
-                        table: catalog.year.table,
-                        column: catalog.year.column
-                    },
-                    operator: 'In',
-                    values: yearValues
-                });
-            }
-
-            if (filterState.country.length > 0) {
-                filters.push({
-                    $schema: 'http://powerbi.com/product/schema#advanced',
-                    target: {
-                        table: catalog.country.table,
-                        column: catalog.country.column
-                    },
-                    operator: 'In',
-                    values: filterState.country
-                });
-            }
-
-            if (filterState.segment.length > 0) {
-                filters.push({
-                    $schema: 'http://powerbi.com/product/schema#advanced',
-                    target: {
-                        table: catalog.segment.table,
-                        column: catalog.segment.column
-                    },
-                    operator: 'In',
-                    values: filterState.segment
-                });
-            }
-
-            if (filterState.product.length > 0) {
-                filters.push({
-                    $schema: 'http://powerbi.com/product/schema#advanced',
-                    target: {
-                        table: catalog.product.table,
-                        column: catalog.product.column
-                    },
-                    operator: 'In',
-                    values: filterState.product
-                });
-            }
+            appendBasicFilters(filters, catalog.year, filterState.year);
+            appendBasicFilters(filters, catalog.country, filterState.country);
+            appendBasicFilters(filters, catalog.segment, filterState.segment);
+            appendBasicFilters(filters, catalog.product, filterState.product);
 
             log(`DEBUG apply payload: ${safeStringify(filters)}`, 'warning');
             log(`Apply pressed — sending ${filters.length} filter(s) in one call`, 'info');
