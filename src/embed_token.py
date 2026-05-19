@@ -235,14 +235,23 @@ def generate_embed_token(config, aad_token, force_refresh=False):
     cache = _load_cache()
     cached = cache.get("embed")
 
-    if not force_refresh and cached:
-        expires_at = _parse_iso_utc(cached.get("expiresAt"))
-        if expires_at and expires_at > (_utc_now() + timedelta(minutes=5)):
-            return cached.get("token"), expires_at
-
     report_id = config["fabric"]["reportId"]
     workspace_id = config["fabric"]["workspaceId"]
     dataset_id = get_report_dataset_id(config, aad_token)
+
+    if not force_refresh and cached:
+        expires_at = _parse_iso_utc(cached.get("expiresAt"))
+        cached_report_id = cached.get("reportId")
+        cached_workspace_id = cached.get("workspaceId")
+        cached_dataset_id = cached.get("datasetId")
+        if (
+            cached_report_id == report_id
+            and cached_workspace_id == workspace_id
+            and cached_dataset_id == dataset_id
+            and expires_at
+            and expires_at > (_utc_now() + timedelta(minutes=5))
+        ):
+            return cached.get("token"), expires_at
 
     url = "https://api.powerbi.com/v1.0/myorg/GenerateToken"
 

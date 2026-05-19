@@ -1,0 +1,30 @@
+relationship 7508ca03-1e04-42c9-8a52-9e6518df6acf
+	joinOnDateBehavior: datePartOnly
+	fromColumn: financials.Date
+	toColumn: LocalDateTable_97a4ec6b-59ce-4dee-b90d-51613488dfb4.Date
+
+relationship b6882e3d-0d00-4239-b893-6fe12a527fcb
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Sheet1.Date
+	toColumn: LocalDateTable_e614187f-2573-4ad6-822a-1cff94945016.Date
+
+relationship 0b87cb61-f401-4b22-a1e0-53cc4f72582e
+	crossFilteringBehavior: bothDirections
+	fromColumn: financials.Year
+	toColumn: DimYear.Year
+
+relationship 3de4f7bb-4f25-4850-b218-cf0fc5cd6d84
+	crossFilteringBehavior: bothDirections
+	fromColumn: financials.Country
+	toColumn: DimCountry.Country
+
+relationship 7c22e411-7815-4fc4-a5f4-c1dff2c43175
+	crossFilteringBehavior: bothDirections
+	fromColumn: financials.Segment
+	toColumn: DimSegment.Segment
+
+relationship c6e2c9c7-ad9b-4414-b6ea-e940a1945af1
+	crossFilteringBehavior: bothDirections
+	fromColumn: financials.Product
+	toColumn: DimProduct.Product
+

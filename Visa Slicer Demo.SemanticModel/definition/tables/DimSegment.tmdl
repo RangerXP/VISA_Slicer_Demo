@@ -1,0 +1,27 @@
+table DimSegment
+	lineageTag: 07c5d824-fd82-4034-a2a0-04d859cfe8e4
+
+	column Segment
+		dataType: string
+		isKey
+		lineageTag: d6d60ea3-dfd5-427a-a812-32f432aa4d91
+		summarizeBy: none
+		sourceColumn: Segment
+
+		annotation SummarizationSetBy = User
+
+	partition DimSegment = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("C:\Users\seankelley\Downloads\Financial Sample.xlsx"), null, true),
+				    financials_Table = Source{[Item="financials",Kind="Table"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(financials_Table,{{"Segment", type text}}),
+				    #"Selected Columns" = Table.SelectColumns(#"Changed Type",{"Segment"}),
+				    #"Removed Duplicates" = Table.Distinct(#"Selected Columns"),
+				    #"Sorted Rows" = Table.Sort(#"Removed Duplicates",{{"Segment", Order.Ascending}})
+				in
+				    #"Sorted Rows"
+
+	annotation PBI_ResultType = Table
+

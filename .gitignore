@@ -30,3 +30,7 @@ auth_tokens.json
 
 # Logs
 *.log
+
+# Power BI local state
+**/.pbi/**
+*.pbix

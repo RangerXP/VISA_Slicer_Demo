@@ -1,0 +1,28 @@
+table DimYear
+	lineageTag: 1f26a032-4aa6-4de0-8d56-654d7d6bc8b2
+
+	column Year
+		dataType: int64
+		isKey
+		formatString: 0
+		lineageTag: 060534c0-dcc0-4905-b2d3-f632ff8135c0
+		summarizeBy: none
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = User
+
+	partition DimYear = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("C:\Users\seankelley\Downloads\Financial Sample.xlsx"), null, true),
+				    financials_Table = Source{[Item="financials",Kind="Table"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(financials_Table,{{"Year", Int64.Type}}),
+				    #"Selected Columns" = Table.SelectColumns(#"Changed Type",{"Year"}),
+				    #"Removed Duplicates" = Table.Distinct(#"Selected Columns"),
+				    #"Sorted Rows" = Table.Sort(#"Removed Duplicates",{{"Year", Order.Ascending}})
+				in
+				    #"Sorted Rows"
+
+	annotation PBI_ResultType = Table
+

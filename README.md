@@ -6,6 +6,8 @@ Power BI embedding and analytics project for the VISA Slicer Demo report.
 ## Documentation
 - [SETUP.md](SETUP.md) - environment, auth, and token setup
 - [TECHNICAL_README.md](TECHNICAL_README.md) - runtime filter architecture, function call flow, and sequence diagram
+- [VISUAL_REPLACEMENT_PLAN.md](VISUAL_REPLACEMENT_PLAN.md) - recommended report visuals and interaction design for the demo
+- [PBIX_VISUAL_BUILD_CHECKLIST.md](PBIX_VISUAL_BUILD_CHECKLIST.md) - Power BI Desktop checklist for rebuilding visuals in Visa Slicer Demo.pbix
 
 ## Local Credential Flow
 - Copy `.env.local.example` to `.env.local`

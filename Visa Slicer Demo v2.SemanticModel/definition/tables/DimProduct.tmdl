@@ -1,0 +1,27 @@
+table DimProduct
+	lineageTag: d60975b9-7a1e-4cf0-bd2f-22b2197e6f0d
+
+	column Product
+		dataType: string
+		isKey
+		lineageTag: 13ac425e-cb7e-4df3-b5d7-52c4af991bd7
+		summarizeBy: none
+		sourceColumn: Product
+
+		annotation SummarizationSetBy = User
+
+	partition DimProduct = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents("C:\Users\seankelley\Downloads\Financial Sample.xlsx"), null, true),
+				    financials_Table = Source{[Item="financials",Kind="Table"]}[Data],
+				    #"Changed Type" = Table.TransformColumnTypes(financials_Table,{{"Product", type text}}),
+				    #"Selected Columns" = Table.SelectColumns(#"Changed Type",{"Product"}),
+				    #"Removed Duplicates" = Table.Distinct(#"Selected Columns"),
+				    #"Sorted Rows" = Table.Sort(#"Removed Duplicates",{{"Product", Order.Ascending}})
+				in
+				    #"Sorted Rows"
+
+	annotation PBI_ResultType = Table
+

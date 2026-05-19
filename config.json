@@ -2,9 +2,9 @@
     "fabric":  {
                    "workspaceName":  "VISA",
                    "workspaceId":  "8dd24078-9814-4e5d-a26c-3713092564bd",
-                   "reportName":  "Visa Slicer Demo",
-                   "reportId":  "366f4557-9e61-43ae-af8b-a5a5011be351",
-                   "reportUrl":  "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/reports/366f4557-9e61-43ae-af8b-a5a5011be351",
+                   "reportName":  "Visa Slicer Demo v2",
+                   "reportId":  "daed8d4d-2dc3-4708-ad82-5611c667498c",
+                   "reportUrl":  "https://app.powerbi.com/groups/8dd24078-9814-4e5d-a26c-3713092564bd/reports/daed8d4d-2dc3-4708-ad82-5611c667498c",
                    "tenantId":  "b7e47691-9726-4f67-a302-e567815f3522"
                },
     "auth":  {

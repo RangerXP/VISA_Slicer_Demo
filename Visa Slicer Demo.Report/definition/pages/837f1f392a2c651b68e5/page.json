@@ -1,0 +1,85 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "837f1f392a2c651b68e5",
+  "displayName": "Demo PBIP",
+  "displayOption": "FitToPage",
+  "height": 720,
+  "width": 1280,
+  "objects": {
+    "outspacePane": [
+      {
+        "properties": {
+          "width": {
+            "expr": {
+              "Literal": {
+                "Value": "419L"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "36ebf1ce284bde6cf5f9",
+      "target": "66aef01cd8614d6b5cf0",
+      "type": "DataFilter"
+    },
+    {
+      "source": "36ebf1ce284bde6cf5f9",
+      "target": "d9e73100294e60c36b61",
+      "type": "DataFilter"
+    },
+    {
+      "source": "36ebf1ce284bde6cf5f9",
+      "target": "e39b9cc3287efb6064ec",
+      "type": "DataFilter"
+    },
+    {
+      "source": "36ebf1ce284bde6cf5f9",
+      "target": "1e146947bc4ad2885dd6",
+      "type": "DataFilter"
+    },
+    {
+      "source": "36ebf1ce284bde6cf5f9",
+      "target": "17ee6c95b0220e7575cc",
+      "type": "DataFilter"
+    },
+    {
+      "source": "66aef01cd8614d6b5cf0",
+      "target": "d9e73100294e60c36b61",
+      "type": "DataFilter"
+    },
+    {
+      "source": "66aef01cd8614d6b5cf0",
+      "target": "e39b9cc3287efb6064ec",
+      "type": "DataFilter"
+    },
+    {
+      "source": "66aef01cd8614d6b5cf0",
+      "target": "1e146947bc4ad2885dd6",
+      "type": "DataFilter"
+    },
+    {
+      "source": "66aef01cd8614d6b5cf0",
+      "target": "17ee6c95b0220e7575cc",
+      "type": "DataFilter"
+    },
+    {
+      "source": "d9e73100294e60c36b61",
+      "target": "e39b9cc3287efb6064ec",
+      "type": "DataFilter"
+    },
+    {
+      "source": "d9e73100294e60c36b61",
+      "target": "1e146947bc4ad2885dd6",
+      "type": "DataFilter"
+    },
+    {
+      "source": "d9e73100294e60c36b61",
+      "target": "17ee6c95b0220e7575cc",
+      "type": "DataFilter"
+    }
+  ]
+}

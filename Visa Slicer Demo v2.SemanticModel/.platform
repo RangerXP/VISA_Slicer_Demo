@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Visa Slicer Demo v2"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "ad5c9dd0-d272-4e2b-b0e5-6c2f98da1253"
+  }
+}

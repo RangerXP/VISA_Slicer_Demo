@@ -1,0 +1,26 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["financials","DimYear","DimCountry","DimSegment","DimProduct","Sheet1"]
+
+annotation PBI_ProTooling = ["DevMode","TMDL-Extension"]
+
+ref table financials
+ref table DateTableTemplate_df0d7e1b-61a4-4c2c-a5b1-c29cb9224269
+ref table LocalDateTable_97a4ec6b-59ce-4dee-b90d-51613488dfb4
+ref table Sheet1
+ref table LocalDateTable_e614187f-2573-4ad6-822a-1cff94945016
+ref table DimYear
+ref table DimCountry
+ref table DimSegment
+ref table DimProduct
+
+ref cultureInfo en-US
+

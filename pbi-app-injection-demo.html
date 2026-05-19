@@ -459,11 +459,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Embed URL</label>
-                        <input type="text" id="embedUrl" placeholder="Loaded from /api/embed-token" value="https://app.powerbi.com/reportEmbed?reportId=366f4557-9e61-43ae-af8b-a5a5011be351&groupId=8dd24078-9814-4e5d-a26c-3713092564bd" readonly>
+                        <input type="text" id="embedUrl" placeholder="Loaded from /api/embed-token" value="https://app.powerbi.com/reportEmbed?reportId=daed8d4d-2dc3-4708-ad82-5611c667498c&groupId=8dd24078-9814-4e5d-a26c-3713092564bd" readonly>
                     </div>
                     <div class="form-group">
                         <label>Report ID</label>
-                        <input type="text" id="reportId" placeholder="Loaded from /api/embed-token" value="366f4557-9e61-43ae-af8b-a5a5011be351" readonly>
+                        <input type="text" id="reportId" placeholder="Loaded from /api/embed-token" value="daed8d4d-2dc3-4708-ad82-5611c667498c" readonly>
                     </div>
                 </div>
                 <div class="form-row full">
@@ -730,6 +730,8 @@
         let tokenRefreshTimer = null;
         let currentTokenLease = null;
         let currentTokenSource = null;
+        let embeddedCascadeSyncInProgress = false;
+        let embeddedCascadeDebounceTimer = null;
         const DEBUG_MODE = false;
         const EMBED_WATCHDOG_MS = 45000;
 
@@ -1154,6 +1156,16 @@
             return value;
         }
 
+        function normalizeFilterValue(catalogItem, value) {
+            if (value === undefined || value === null) {
+                return '';
+            }
+            if (catalogItem && catalogItem.valueType === 'number') {
+                return String(value);
+            }
+            return String(value);
+        }
+
         function getFilterTargets(catalogItem) {
             const rawTargets = (catalogItem && Array.isArray(catalogItem.aliases) && catalogItem.aliases.length > 0)
                 ? catalogItem.aliases
@@ -1273,6 +1285,217 @@
             }
 
             return [];
+        }
+
+        function getAvailableValuesForState(key, state) {
+            const selectionState = state || { year: [], country: [], segment: [], product: [] };
+
+            if (key === 'country') {
+                return getAvailableCountries(selectionState.year);
+            }
+
+            if (key === 'segment') {
+                return getAvailableSegments(selectionState.year, selectionState.country);
+            }
+
+            if (key === 'product') {
+                return getAvailableProducts(selectionState.year, selectionState.country, selectionState.segment);
+            }
+
+            return [];
+        }
+
+        function extractSelectedValuesFromSlicerState(key, slicerState) {
+            const catalogItem = catalog[key];
+            if (!catalogItem || !slicerState || !Array.isArray(slicerState.filters) || slicerState.filters.length === 0) {
+                return [];
+            }
+
+            const basicFilter = slicerState.filters.find((filter) => Array.isArray(filter && filter.values));
+            if (!basicFilter || !Array.isArray(basicFilter.values)) {
+                return [];
+            }
+
+            return basicFilter.values
+                .map((value) => normalizeFilterValue(catalogItem, value))
+                .filter((value) => value !== '');
+        }
+
+        function extractSelectedValuesFromFilterArray(key, filters) {
+            const catalogItem = catalog[key];
+            if (!catalogItem) {
+                return [];
+            }
+
+            const filterArray = Array.isArray(filters) ? filters : [];
+            const matchingFilter = filterArray.find((filter) => {
+                const target = filter && filter.target;
+                if (!target || !target.column) {
+                    return false;
+                }
+                return identifyFilterKey(target.column) === key && Array.isArray(filter.values);
+            });
+
+            if (!matchingFilter || !Array.isArray(matchingFilter.values)) {
+                return [];
+            }
+
+            return matchingFilter.values
+                .map((value) => normalizeFilterValue(catalogItem, value))
+                .filter((value) => value !== '');
+        }
+
+        function buildEmbeddedCascadeValues(key, state) {
+            const selectedValues = Array.isArray(state[key]) ? state[key] : [];
+            if (selectedValues.length > 0) {
+                return selectedValues;
+            }
+
+            const availableValues = getAvailableValuesForState(key, state);
+            if (key === 'country') {
+                return state.year.length > 0 ? availableValues : [];
+            }
+
+            if (key === 'segment') {
+                return (state.year.length > 0 || state.country.length > 0) ? availableValues : [];
+            }
+
+            if (key === 'product') {
+                return (state.year.length > 0 || state.country.length > 0 || state.segment.length > 0) ? availableValues : [];
+            }
+
+            return [];
+        }
+
+        function getDownstreamCascadeKeys(triggerKey) {
+            if (triggerKey === 'year') {
+                return ['country', 'segment', 'product'];
+            }
+            if (triggerKey === 'country') {
+                return ['segment', 'product'];
+            }
+            if (triggerKey === 'segment') {
+                return ['product'];
+            }
+            return [];
+        }
+
+        function resetEmbeddedDownstreamSelections(triggerKey, state) {
+            const nextState = state || { year: [], country: [], segment: [], product: [] };
+            const downstreamKeys = getDownstreamCascadeKeys(triggerKey);
+            downstreamKeys.forEach((key) => {
+                nextState[key] = [];
+            });
+            return nextState;
+        }
+
+        async function syncEmbeddedCascadeFromSlicer(triggerKey, explicitValues = null) {
+            if (!report || embeddedCascadeSyncInProgress) {
+                return;
+            }
+
+            const cascadeKeys = getDownstreamCascadeKeys(triggerKey);
+            if (cascadeKeys.length === 0) {
+                return;
+            }
+
+            const bindings = await discoverSlicerBindings(true);
+            if (Object.keys(bindings).length === 0) {
+                return;
+            }
+
+            const page = await report.getActivePage();
+            const visuals = await page.getVisuals();
+            const visualByName = new Map(visuals.map((visual) => [visual.name, visual]));
+            const embeddedState = { year: [], country: [], segment: [], product: [] };
+
+            for (const key of ['year', 'country', 'segment', 'product']) {
+                const binding = bindings[key];
+                if (!binding) {
+                    continue;
+                }
+
+                const visual = visualByName.get(binding.visualName);
+                if (!visual || typeof visual.getSlicerState !== 'function') {
+                    continue;
+                }
+
+                try {
+                    const slicerState = await visual.getSlicerState();
+                    embeddedState[key] = extractSelectedValuesFromSlicerState(key, slicerState);
+                } catch (error) {
+                    log(`DEBUG failed reading slicer state for ${key}: ${error && error.message ? error.message : error}`, 'warning');
+                }
+            }
+
+            if (Array.isArray(explicitValues)) {
+                embeddedState[triggerKey] = explicitValues.filter((value) => value !== '');
+            }
+
+            resetEmbeddedDownstreamSelections(triggerKey, embeddedState);
+
+            const availableCountries = getAvailableCountries(embeddedState.year);
+            embeddedState.country = embeddedState.country.filter((value) => availableCountries.includes(value));
+
+            const availableSegments = getAvailableSegments(embeddedState.year, embeddedState.country);
+            embeddedState.segment = embeddedState.segment.filter((value) => availableSegments.includes(value));
+
+            const availableProducts = getAvailableProducts(embeddedState.year, embeddedState.country, embeddedState.segment);
+            embeddedState.product = embeddedState.product.filter((value) => availableProducts.includes(value));
+
+            embeddedCascadeSyncInProgress = true;
+            try {
+                for (const key of cascadeKeys) {
+                    const binding = bindings[key];
+                    if (!binding) {
+                        continue;
+                    }
+
+                    const visual = visualByName.get(binding.visualName);
+                    if (!visual || typeof visual.setSlicerState !== 'function') {
+                        continue;
+                    }
+
+                    const valuesToApply = buildEmbeddedCascadeValues(key, embeddedState);
+                    const coercedValues = valuesToApply.map((value) => coerceFilterValue(catalog[key], value));
+                    const slicerFilters = coercedValues.length > 0
+                        ? [
+                            new models.BasicFilter(
+                                { table: binding.target.table, column: binding.target.column },
+                                'In',
+                                coercedValues
+                            )
+                        ]
+                        : [];
+
+                    await visual.setSlicerState({ filters: slicerFilters });
+                }
+
+                log(`DEBUG embedded cascade synced from ${triggerKey}: ${safeStringify(embeddedState)}`, 'warning');
+            } finally {
+                embeddedCascadeSyncInProgress = false;
+            }
+        }
+
+        function scheduleEmbeddedCascadeSync(triggerKey, explicitValues = null) {
+            if (!triggerKey) {
+                return;
+            }
+
+            const explicitValueSnapshot = Array.isArray(explicitValues) ? [...explicitValues] : null;
+
+            if (embeddedCascadeDebounceTimer) {
+                clearTimeout(embeddedCascadeDebounceTimer);
+                embeddedCascadeDebounceTimer = null;
+            }
+
+            embeddedCascadeDebounceTimer = setTimeout(() => {
+                embeddedCascadeDebounceTimer = null;
+                syncEmbeddedCascadeFromSlicer(triggerKey, explicitValueSnapshot)
+                    .catch((error) => {
+                        log(`DEBUG embedded cascade failed for ${triggerKey}: ${error && error.message ? error.message : error}`, 'warning');
+                    });
+            }, 250);
         }
 
         async function syncDiscoveredSlicersFromFilterState() {
@@ -1742,6 +1965,22 @@
                         .catch((err) => {
                             log(`DEBUG getPages failed: ${err && err.message ? err.message : err}`, 'warning');
                         });
+                });
+
+                report.on('dataSelected', function(event) {
+                    if (embeddedCascadeSyncInProgress) {
+                        return;
+                    }
+
+                    const eventPayload = event && event.detail ? event.detail : event;
+                    const visual = eventPayload && eventPayload.visual ? eventPayload.visual : null;
+                    const triggerKey = identifyFilterKey((visual && visual.title) || (visual && visual.name));
+                    if (!triggerKey) {
+                        return;
+                    }
+
+                    const explicitValues = extractSelectedValuesFromFilterArray(triggerKey, eventPayload && eventPayload.filters);
+                    scheduleEmbeddedCascadeSync(triggerKey, explicitValues);
                 });
 
             } catch (error) {
